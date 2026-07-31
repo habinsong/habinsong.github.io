@@ -1,0 +1,95 @@
+.lightbox {
+  display: none;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  padding: var(--space-5) var(--space-6) var(--space-8);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.lightbox[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--space-4);
+}
+
+.lightbox::backdrop {
+  background: var(--paper);
+}
+
+.lightbox-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.lightbox-counter {
+  margin: 0;
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.lightbox-button {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  padding: 0 0 var(--space-1);
+  text-transform: uppercase;
+}
+
+.lightbox-button:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.lightbox-stage {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  min-height: 0;
+  margin: 0;
+}
+
+.lightbox-stage img {
+  max-width: min(100%, 1400px);
+  max-height: calc(100dvh - 220px);
+  width: auto;
+  height: auto;
+}
+
+.lightbox-stage figcaption {
+  max-width: var(--measure);
+  padding: 0;
+  text-align: center;
+}
+
+.lightbox-nav {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-10);
+}
+
+@media (max-width: 760px) {
+  .lightbox {
+    padding: var(--space-4);
+  }
+
+  .lightbox-stage img {
+    max-height: calc(100dvh - 190px);
+  }
+}

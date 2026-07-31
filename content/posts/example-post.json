@@ -1,0 +1,61 @@
+{
+  "id": "example-post",
+  "title": "Example post draft",
+  "date": "2026-07-11",
+  "status": "draft",
+  "excerpt": "This file documents the post schema. Draft posts are ignored by the public page.",
+  "series": "",
+  "tags": ["film"],
+  "cover": null,
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "Paragraph blocks support plain text. The renderer inserts text safely instead of trusting HTML. In the admin editor, one text box separated by blank lines exports as multiple paragraph blocks like this one."
+    },
+    {
+      "type": "photo",
+      "photo": {
+        "id": "example-photo",
+        "title": "Example frame",
+        "medium": "film",
+        "tone": "bw",
+        "src": "photos/example-post/example-photo.jpg",
+        "alt": "Example photograph description.",
+        "place": "Seoul",
+        "year": "2026",
+        "details": "Film stock · lens · exposure",
+        "width": 3,
+        "height": 2
+      },
+      "comment": "An optional comment rendered under the photo caption — use it for the story behind the frame."
+    },
+    {
+      "type": "gallery",
+      "photos": [
+        {
+          "id": "example-photo-2",
+          "title": "Second frame",
+          "medium": "digital",
+          "tone": "color",
+          "src": "photos/example-post/example-photo-2.jpg",
+          "alt": "Second example photograph.",
+          "place": "",
+          "year": "2026",
+          "details": "",
+          "width": 3,
+          "height": 2
+        }
+      ]
+    },
+    {
+      "type": "link-list",
+      "title": "References",
+      "links": [
+        {
+          "label": "Project home",
+          "url": "https://example.com"
+        }
+      ]
+    }
+  ]
+}

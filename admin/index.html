@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="color-scheme" content="light">
+    <meta name="robots" content="noindex">
+    <title>Admin — Habin Song Photographs</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='3' y='3' width='10' height='10' fill='none' stroke='%23111'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="admin.css">
+    <script type="module" src="admin.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#composer" data-i18n="a.skip">Skip to composer</a>
+
+    <div class="lang-bar">
+      <nav class="lang-switch" aria-label="Language" data-i18n-attrs="aria-label:lang.aria">
+        <button type="button" data-lang="ko" lang="ko" aria-pressed="false">한국어</button>
+        <button type="button" data-lang="en" lang="en" aria-pressed="false">English</button>
+        <button type="button" data-lang="ja" lang="ja" aria-pressed="false">日本語</button>
+        <button type="button" data-lang="zh" lang="zh-Hans" aria-pressed="false">中文</button>
+      </nav>
+    </div>
+
+    <header class="site-header" aria-label="Admin header" data-i18n-attrs="aria-label:a.header.aria">
+      <a class="wordmark" href="../">Habin Song</a>
+      <nav class="top-nav" aria-label="Admin navigation" data-i18n-attrs="aria-label:a.nav.aria">
+        <a href="../" data-i18n="a.nav.site">Site</a>
+        <a href="#export" data-i18n="a.nav.export">Export</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro admin-hero" aria-labelledby="admin-title">
+        <h1 id="admin-title" data-i18n="a.hero.title">Compose a post</h1>
+        <p class="intro-copy" data-i18n="a.hero.copy">This page does not upload to a server. It creates JSON and asset files in your browser, then downloads a ZIP bundle you can copy into the repository before running the release script.</p>
+      </section>
+
+      <section id="composer" class="admin-shell" aria-labelledby="composer-title">
+        <form id="post-form" class="admin-form">
+          <div class="section-head admin-head">
+            <h2 id="composer-title" data-i18n="a.details.title">Post details</h2>
+            <p id="save-status" class="count" aria-live="polite" data-i18n="a.status.saved">Draft saved locally</p>
+          </div>
+
+          <label>
+            <span data-i18n="a.field.title">Title</span>
+            <input name="title" required autocomplete="off" placeholder="A roll from Jongno" data-i18n-attrs="placeholder:a.field.title.ph">
+          </label>
+
+          <div class="field-grid">
+            <label>
+              <span data-i18n="a.field.date">Date</span>
+              <input name="date" type="date" required>
+            </label>
+            <label>
+              <span data-i18n="a.field.status">Status</span>
+              <select name="status">
+                <option value="published" data-i18n="a.status.published">Published</option>
+                <option value="draft" data-i18n="a.status.draft">Draft</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label>
+              <span data-i18n="a.field.series">Series</span>
+              <input name="series" list="series-list" autocomplete="off" placeholder="Jeju 2026" data-i18n-attrs="placeholder:a.field.series.ph">
+              <datalist id="series-list"></datalist>
+            </label>
+            <label>
+              <span data-i18n="a.field.tags">Tags</span>
+              <input name="tags" autocomplete="off" placeholder="film, seoul, black-and-white" data-i18n-attrs="placeholder:a.field.tags.ph">
+            </label>
+          </div>
+
+          <label>
+            <span data-i18n="a.field.excerpt">Excerpt</span>
+            <textarea name="excerpt" rows="3" required placeholder="A short factual summary for the post list." data-i18n-attrs="placeholder:a.field.excerpt.ph"></textarea>
+          </label>
+
+          <fieldset id="photo-zone">
+            <legend data-i18n="a.photos.legend">Photographs</legend>
+            <p class="field-note" data-i18n="a.photos.note">Select image files first. Each image can be reused as a post photo block or exported to the gallery manifest.</p>
+            <input id="photo-files" type="file" accept="image/*" multiple>
+            <p class="field-note drop-note" data-i18n="a.photos.drop">You can also drag and drop images here.</p>
+            <div id="asset-list" class="asset-list" aria-live="polite"></div>
+          </fieldset>
+
+          <fieldset class="editor-fieldset">
+            <legend data-i18n="a.editor.legend">Body</legend>
+            <p class="field-note" data-i18n="a.editor.note">Type directly in the canvas. Enter starts a new paragraph; insert images by drag and drop or the Photo button.</p>
+            <div class="editor-toolbar" role="toolbar" aria-label="Editing tools" data-i18n-attrs="aria-label:a.editor.toolbar.aria">
+              <button type="button" data-ed-block="paragraph" data-i18n="a.block.paragraph">Text</button>
+              <button type="button" data-ed-block="heading" data-i18n="a.block.heading">Heading</button>
+              <button type="button" data-ed-block="quote" data-i18n="a.block.quote">Quote</button>
+              <span class="toolbar-sep" aria-hidden="true"></span>
+              <button type="button" data-ed-insert="photo" data-i18n="a.block.photo">Photo</button>
+              <button type="button" data-ed-insert="all-photos" data-i18n="a.block.add-all">Add all photos</button>
+              <button type="button" data-ed-insert="gallery" data-i18n="a.block.gallery">Gallery</button>
+              <button type="button" data-ed-insert="link-list" data-i18n="a.block.link-list">Links</button>
+            </div>
+            <div id="editor-canvas" class="editor-canvas" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post body" data-i18n-attrs="aria-label:a.editor.canvas.aria"></div>
+          </fieldset>
+
+          <section id="export" class="export-panel" aria-labelledby="export-title">
+            <div>
+              <h2 id="export-title" data-i18n="a.export.title">Build content bundle</h2>
+              <p class="field-note"><span data-i18n="a.export.note.before">Download the ZIP, extract it at the repository root, then run </span><code>python3 scripts/release.py</code><span data-i18n="a.export.note.after">.</span></p>
+            </div>
+            <div class="export-actions">
+              <button type="button" id="download-json" data-i18n="a.btn.json">Download JSON</button>
+              <button type="button" id="download-zip" data-i18n="a.btn.zip">Download ZIP</button>
+              <button type="button" id="import-json" data-i18n="a.btn.import">Import JSON</button>
+              <button type="button" id="reset-draft" data-i18n="a.btn.reset">Reset draft</button>
+            </div>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+            <output id="validation-output" class="validation-output" aria-live="polite"></output>
+          </section>
+        </form>
+
+        <aside class="preview-panel" aria-labelledby="preview-title">
+          <h2 id="preview-title" data-i18n="a.preview.title">Preview</h2>
+          <div id="preview" class="preview-content"></div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

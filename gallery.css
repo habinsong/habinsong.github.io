@@ -1,0 +1,123 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin-bottom: var(--space-12);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.filter-button {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  padding: 0 0 var(--space-1);
+  text-transform: uppercase;
+}
+
+.filter-button[aria-pressed="true"] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-16) var(--space-6);
+}
+
+.photo-card {
+  grid-column: span 6;
+  margin: 0;
+}
+
+.photo-card:nth-child(5n + 1) {
+  grid-column: 1 / -1;
+}
+
+.photo-frame {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: var(--ratio, 3 / 2);
+  border: 0;
+  padding: 0;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.photo-frame:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.photo-frame[disabled] {
+  cursor: default;
+}
+
+.photo-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-frame.is-missing {
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.missing-label {
+  padding: var(--space-6);
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+figcaption {
+  max-width: 760px;
+  padding-top: var(--space-3);
+}
+
+.caption-main {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+.caption-meta {
+  margin: var(--space-1) 0 0;
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  padding: var(--space-2) 0 var(--space-8);
+}
+
+.empty-state h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 400;
+}

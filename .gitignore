@@ -1,0 +1,12 @@
+.DS_Store
+
+# 배포본은 GitHub Actions가 릴리스 스크립트로 다시 만든다
+/_release/
+
+# 관리자 화면에서 내려받은 ZIP을 푼 뒤 release.py가 병합하고 지우는 파일
+*.merge.json
+
+# 로컬 도구가 남기는 것들
+.claude/
+.omo/
+.playwright-mcp/

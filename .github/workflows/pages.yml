@@ -1,0 +1,41 @@
+name: pages
+
+# 저장소에는 원본이 올라가고, 공개되는 것은 release.py가 만든 _release/ 뿐이다.
+# README, DESIGN, scripts 같은 작업 파일은 사이트 주소로 열리지 않는다.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the release
+        run: python3 scripts/release.py
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _release
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

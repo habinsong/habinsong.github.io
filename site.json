@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "title": "Habin Song Photographs",
+  "email": "habin959@gmail.com",
+  "baseUrl": "https://habinsong.github.io",
+  "sitemaps": [
+    "https://habinsong.github.io/negaflow-site/sitemap.xml"
+  ]
+}
