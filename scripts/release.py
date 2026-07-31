@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from datetime import timedelta
+from urllib.parse import quote
 from xml.sax.saxutils import escape, quoteattr
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +32,7 @@ PUBLIC_FILES = [
     "site-utils.js",
     "site-data.js",
     "site-render.js",
+    "post-page.js",
     "photos.json",
     "series.json",
     "site.json",
@@ -94,6 +96,7 @@ def main() -> None:
     validate_posts_index(posts_index, series_ids)
     validate_post_files(posts_index)
     build_release()
+    write_post_pages(site, posts_index)
     write_discovery_files(site, posts_index)
     print(f"release-ok: {OUT}")
 
@@ -286,12 +289,224 @@ def build_release() -> None:
             shutil.copytree(source, target, ignore=ignore)
 
 
+# A post used to live behind "#post=<id>", which search engines read as one
+# address for the whole site. Each published post is written as its own page
+# under /posts/<id>/ so it can be found, linked and shared on its own.
+
+def write_post_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
+    posts = published_posts(posts_index)
+    for position, summary in enumerate(posts):
+        post = read_json(ROOT / summary["path"])
+        newer = posts[position - 1] if position > 0 else None
+        older = posts[position + 1] if position + 1 < len(posts) else None
+        directory = OUT / "posts" / summary["id"]
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "index.html").write_text(post_page(site, summary, post, newer, older), encoding="utf-8")
+    if posts:
+        print(f"posts: {len(posts)} page(s)")
+
+
+def post_page(site, summary, post, newer, older) -> str:
+    base_url = site["baseUrl"].rstrip("/")
+    title = summary["title"]
+    excerpt = summary.get("excerpt", "")
+    url = post_url(base_url, summary["id"]) if base_url else ""
+    head = [
+        '<meta charset="utf-8">',
+        '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'self\'; '
+        'style-src \'self\'; img-src \'self\' data: https:; connect-src \'self\'; base-uri \'none\'; form-action \'none\'">',
+        '<meta name="referrer" content="strict-origin-when-cross-origin">',
+        '<meta name="color-scheme" content="light">',
+        f"<title>{escape(title)} — {escape(site['title'])}</title>",
+        f"<meta name=\"description\" content={quoteattr(excerpt)}>",
+        f"<meta property=\"og:title\" content={quoteattr(title)}>",
+        f"<meta property=\"og:description\" content={quoteattr(excerpt)}>",
+        '<meta property="og:type" content="article">',
+    ]
+    if url:
+        head += [
+            f'<link rel="canonical" href="{escape(url)}">',
+            f"<meta property=\"og:url\" content=\"{escape(url)}\">",
+        ]
+    cover = first_photo(post)
+    if cover and base_url:
+        head.append(f"<meta property=\"og:image\" content=\"{escape(base_url)}/{escape(cover)}\">")
+    head += [
+        '<link rel="stylesheet" href="/styles.css">',
+        '<script type="module" src="/post-page.js" defer></script>',
+    ]
+
+    meta_line = " · ".join(part for part in [summary.get("date", ""), series_title(site, summary)] if part)
+    body = [
+        '<a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>',
+        '<div class="lang-bar"><nav class="lang-switch" aria-label="Language" data-i18n-attrs="aria-label:lang.aria">',
+        '  <button type="button" data-lang="ko" lang="ko" aria-pressed="false">한국어</button>',
+        '  <button type="button" data-lang="en" lang="en" aria-pressed="false">English</button>',
+        '  <button type="button" data-lang="ja" lang="ja" aria-pressed="false">日本語</button>',
+        '  <button type="button" data-lang="zh" lang="zh-Hans" aria-pressed="false">中文</button>',
+        "</nav></div>",
+        '<header class="site-header">',
+        f"  <a class=\"wordmark\" href=\"/\">{escape(site['title'].split()[0])} {escape(site['title'].split()[1] if len(site['title'].split()) > 1 else '')}</a>",
+        '  <nav class="top-nav" aria-label="Primary navigation" data-i18n-attrs="aria-label:nav.aria">',
+        '    <a href="/#posts" data-i18n="nav.posts">Posts</a>',
+        '    <a href="/#series" data-i18n="nav.series">Series</a>',
+        '    <a href="/#gallery" data-i18n="nav.gallery">Gallery</a>',
+        '    <a href="/#archive" data-i18n="nav.archive">Archive</a>',
+        '    <a href="/#about" data-i18n="nav.about">About</a>',
+        "  </nav>",
+        "</header>",
+        '<main id="main">',
+        '  <section class="post-detail">',
+        '  <article class="post-article">',
+        '    <a class="back-link" href="/#posts" data-i18n="post.back">Back to posts</a>',
+        f'    <p class="post-meta">{escape(meta_line)}</p>',
+        f"    <h1>{escape(title)}</h1>",
+        f'    <p class="post-lead">{escape(excerpt)}</p>',
+    ]
+    body += [f"    {line}" for line in blocks_html(post.get("blocks", []))]
+    body.append("  </article>")
+    body += post_nav_html(older, newer)
+    body += ["  </section>", "</main>"]
+    body += [
+        '<footer class="site-footer">',
+        f"  <p>© {datetime.now(timezone.utc).year} Habin Song</p>",
+        f"  <a href=\"mailto:{escape(site['email'])}\" data-i18n=\"footer.contact\">Contact</a>",
+        "</footer>",
+        '<dialog id="lightbox" class="lightbox" aria-label="Image viewer" data-i18n-attrs="aria-label:lb.aria">',
+        '  <div class="lightbox-bar">',
+        '    <p id="lightbox-counter" class="lightbox-counter"></p>',
+        '    <button type="button" id="lightbox-close" class="lightbox-button" data-i18n="lb.close">Close</button>',
+        "  </div>",
+        '  <figure class="lightbox-stage">',
+        '    <img id="lightbox-image" alt="">',
+        "    <figcaption>",
+        '      <p id="lightbox-caption" class="caption-main"></p>',
+        '      <p id="lightbox-meta" class="caption-meta"></p>',
+        "    </figcaption>",
+        "  </figure>",
+        '  <div class="lightbox-nav">',
+        '    <button type="button" id="lightbox-prev" class="lightbox-button" data-i18n="lb.prev">Previous</button>',
+        '    <button type="button" id="lightbox-next" class="lightbox-button" data-i18n="lb.next">Next</button>',
+        "  </div>",
+        "</dialog>",
+    ]
+    return (
+        "<!doctype html>\n<html lang=\"ko\">\n<head>\n"
+        + "\n".join(head)
+        + "\n</head>\n<body>\n"
+        + "\n".join(body)
+        + "\n</body>\n</html>\n"
+    )
+
+
+def series_title(site: dict[str, Any], summary: dict[str, Any]) -> str:
+    wanted = summary.get("series", "")
+    if not wanted:
+        return ""
+    for entry in read_json(ROOT / "series.json").get("series", []):
+        if isinstance(entry, dict) and entry.get("id") == wanted:
+            return str(entry.get("title", ""))
+    return ""
+
+
+def first_photo(post: dict[str, Any]) -> str:
+    for block in post.get("blocks", []):
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "photo" and isinstance(block.get("photo"), dict):
+            return str(block["photo"].get("src", ""))
+        if block.get("type") == "gallery":
+            for photo in block.get("photos", []):
+                if isinstance(photo, dict) and photo.get("src"):
+                    return str(photo["src"])
+    return ""
+
+
+def blocks_html(blocks: list[Any]) -> list[str]:
+    lines: list[str] = []
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        kind = block.get("type")
+        if kind == "heading":
+            lines.append(f'<h2 class="post-heading">{escape(str(block.get("text", "")))}</h2>')
+        elif kind == "paragraph":
+            lines.append(f'<p class="post-body-copy">{escape(str(block.get("text", "")))}</p>')
+        elif kind == "quote":
+            lines.append(f"<blockquote>{escape(str(block.get('text', '')))}</blockquote>")
+        elif kind == "photo":
+            lines += figure_html(block.get("photo"), str(block.get("comment", "")))
+        elif kind == "gallery":
+            lines.append('<div class="inline-gallery">')
+            for photo in block.get("photos", []):
+                lines += [f"  {line}" for line in figure_html(photo, "")]
+            lines.append("</div>")
+        elif kind == "link-list":
+            lines.append('<section class="link-list">')
+            heading = str(block.get("title", ""))
+            if heading:
+                lines.append(f"  <h2>{escape(heading)}</h2>")
+            lines.append("  <ul>")
+            for link in block.get("links", []):
+                if isinstance(link, dict) and str(link.get("url", "")).startswith(("http://", "https://")):
+                    lines.append(
+                        f"    <li><a href={quoteattr(str(link['url']))} rel=\"noopener noreferrer\">"
+                        f"{escape(str(link.get('label', link['url'])))}</a></li>"
+                    )
+            lines += ["  </ul>", "</section>"]
+    return lines
+
+
+def figure_html(photo: Any, comment: str) -> list[str]:
+    if not isinstance(photo, dict):
+        return []
+    src = str(photo.get("src", ""))
+    alt = str(photo.get("alt", ""))
+    width = photo.get("width") or 3
+    height = photo.get("height") or 2
+    caption = " · ".join(part for part in [str(photo.get("title", "")), str(photo.get("place", "")), str(photo.get("year", ""))] if part)
+    details = str(photo.get("details", ""))
+    lines = [
+        f'<figure class="photo-card" data-medium="{escape(str(photo.get("medium", "digital")))}" data-tone="{escape(str(photo.get("tone", "color")))}">',
+        f'  <button type="button" class="photo-frame" style="--ratio: {width} / {height}">',
+        f'    <img src="/{escape(src)}" alt={quoteattr(alt)} loading="lazy" decoding="async">',
+        "  </button>",
+        "  <figcaption>",
+        f'    <p class="caption-main">{escape(caption)}</p>',
+        f'    <p class="caption-meta">{escape(details)}</p>',
+    ]
+    if comment:
+        lines.append(f'    <p class="photo-comment">{escape(comment)}</p>')
+    lines += ["  </figcaption>", "</figure>"]
+    return lines
+
+
+def post_nav_html(older: Any, newer: Any) -> list[str]:
+    if older is None and newer is None:
+        return []
+    lines = ['<nav class="post-nav">']
+    for summary, css, key, label in [
+        (older, "is-prev", "post.prev", "Older"),
+        (newer, "is-next", "post.next", "Newer"),
+    ]:
+        lines.append(f'  <div class="post-nav-slot {css}">')
+        if isinstance(summary, dict):
+            lines += [
+                f'    <p class="post-nav-label" data-i18n="{key}">{label}</p>',
+                f'    <a href="/posts/{quote(summary["id"])}/">{escape(summary["title"])}</a>',
+            ]
+        lines.append("  </div>")
+    lines.append("</nav>")
+    return lines
+
+
 def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
     base_url = site["baseUrl"].rstrip("/")
     robots = ["User-agent: *", "Allow: /", "Disallow: /admin/"]
     if base_url:
         robots.append(f"Sitemap: {base_url}/sitemap.xml")
-        (OUT / "sitemap.xml").write_text(sitemap_xml(base_url), encoding="utf-8")
+        (OUT / "sitemap.xml").write_text(sitemap_xml(base_url, posts_index), encoding="utf-8")
         (OUT / "feed.xml").write_text(feed_xml(site, base_url, posts_index), encoding="utf-8")
         (OUT / "rss.xml").write_text(rss_xml(site, base_url, posts_index), encoding="utf-8")
     else:
@@ -306,17 +521,29 @@ def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> 
     (well_known / "security.txt").write_text("\n".join(security) + "\n", encoding="utf-8")
 
 
-def sitemap_xml(base_url: str) -> str:
+def sitemap_xml(base_url: str, posts_index: dict[str, Any]) -> str:
+    locs = [f"{base_url}/"]
+    locs += [post_url(base_url, post["id"]) for post in published_posts(posts_index)]
+    body = "".join(f"  <url><loc>{escape(loc)}</loc></url>\n" for loc in locs)
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"  <url><loc>{escape(base_url)}/</loc></url>\n"
+        f"{body}"
         "</urlset>\n"
     )
 
 
+def published_posts(posts_index: dict[str, Any]) -> list[dict[str, Any]]:
+    posts = [post for post in posts_index["posts"] if post["status"] == "published"]
+    return sorted(posts, key=lambda post: post.get("date", ""), reverse=True)
+
+
+def post_url(base_url: str, post_id: str) -> str:
+    return f"{base_url}/posts/{quote(post_id)}/"
+
+
 def feed_xml(site: dict[str, Any], base_url: str, posts_index: dict[str, Any]) -> str:
-    published = [post for post in posts_index["posts"] if post["status"] == "published"]
+    published = published_posts(posts_index)
     dates = sorted(post.get("date", "") for post in published if isinstance(post.get("date"), str))
     updated = rfc3339(dates[-1] if dates and dates[-1] else "")
     title = escape(site["title"])
@@ -331,7 +558,7 @@ def feed_xml(site: dict[str, Any], base_url: str, posts_index: dict[str, Any]) -
         f"  <author><name>{title}</name></author>",
     ]
     for post in published:
-        link = f"{base_url}/#post={post['id']}"
+        link = post_url(base_url, post["id"])
         lines += [
             "  <entry>",
             f"    <title>{escape(post['title'])}</title>",
@@ -346,7 +573,7 @@ def feed_xml(site: dict[str, Any], base_url: str, posts_index: dict[str, Any]) -
 
 
 def rss_xml(site: dict[str, Any], base_url: str, posts_index: dict[str, Any]) -> str:
-    published = [post for post in posts_index["posts"] if post["status"] == "published"]
+    published = published_posts(posts_index)
     dates = sorted(post.get("date", "") for post in published if isinstance(post.get("date"), str))
     title = escape(site["title"])
     description = escape(site.get("description") or site["title"])
@@ -362,7 +589,7 @@ def rss_xml(site: dict[str, Any], base_url: str, posts_index: dict[str, Any]) ->
         f"    <atom:link href={quoteattr(base_url + '/rss.xml')} rel=\"self\" type=\"application/rss+xml\"/>",
     ]
     for post in published:
-        link = f"{base_url}/#post={post['id']}"
+        link = post_url(base_url, post["id"])
         lines += [
             "    <item>",
             f"      <title>{escape(post['title'])}</title>",

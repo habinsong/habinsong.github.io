@@ -359,6 +359,30 @@ export const SITE_MESSAGES = {
     ja: "デジタルとフィルムで写真を撮っています。お問い合わせはメールでお願いします。",
     zh: "我用数码与胶片拍摄。如有事宜，请发邮件联系。",
   },
+  "gallery.more": {
+    ko: "사진 {n}장 더 보기",
+    en: "Show {n} more",
+    ja: "写真をあと {n} 枚",
+    zh: "再看 {n} 张",
+  },
+  "pager.aria": {
+    ko: "글 목록 쪽 넘기기",
+    en: "Post list pages",
+    ja: "記事一覧のページ送り",
+    zh: "文章列表分页",
+  },
+  "pager.prev": {
+    ko: "이전",
+    en: "Previous",
+    ja: "前へ",
+    zh: "上一页",
+  },
+  "pager.next": {
+    ko: "다음",
+    en: "Next",
+    ja: "次へ",
+    zh: "下一页",
+  },
   "about.negaflow": {
     ko: "필름 네거티브를 반전하고 현상하는 macOS 앱 negaflow를 만듭니다.",
     en: "I also make negaflow, a macOS app that inverts and develops film negatives.",

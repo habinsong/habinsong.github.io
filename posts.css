@@ -56,8 +56,19 @@ blockquote {
   padding-top: var(--space-8);
 }
 
+.post-article h1,
 .post-article h2 {
   margin-top: var(--space-4);
+}
+
+/* a post on its own page carries the h1 the index gives to the site name */
+.post-article h1 {
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: var(--space-4) 0 0;
+  max-width: var(--measure);
 }
 
 .back-link {

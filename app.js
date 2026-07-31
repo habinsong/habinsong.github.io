@@ -8,12 +8,28 @@ import { emptyState, requireElement } from "./site-utils.js";
 registerMessages(SITE_MESSAGES);
 initI18n();
 
-const state = { filter: "all", photos: [], posts: [], series: [], detailPhotos: [] };
+// A roll is a hundred frames and an archive keeps growing, so neither list is
+// poured onto the page whole. Posts are paged, photographs load a screenful at
+// a time — the gallery is meant to be scrolled, not clicked through.
+const POSTS_PER_PAGE = 10;
+const PHOTOS_PER_STEP = 24;
+
+const state = {
+  filter: "all",
+  photos: [],
+  posts: [],
+  series: [],
+  detailPhotos: [],
+  postsPage: 1,
+  photosShown: PHOTOS_PER_STEP,
+};
 const grid = requireElement("#photo-grid");
 const photoCount = requireElement("#gallery-count");
 const postsList = requireElement("#posts-list");
 const seriesList = requireElement("#series-list");
 const archiveList = requireElement("#archive-list");
+const postsPager = requireElement("#posts-pager");
+const photoMore = requireElement("#gallery-more");
 const postDetail = requireElement("#post-detail");
 const seriesDetail = requireElement("#series-detail");
 const photoTemplate = requireElement("#photo-card-template");
@@ -25,6 +41,7 @@ requireElement("#year").textContent = String(new Date().getFullYear());
 for (const button of filterButtons) {
   button.addEventListener("click", () => {
     state.filter = button.dataset.filter ?? "all";
+    state.photosShown = PHOTOS_PER_STEP;
     updatePressedFilter();
     renderPhotos();
   });
@@ -79,17 +96,79 @@ function renderPhotos() {
   photoCount.textContent = countText(visible.length, state.photos.length);
   if (visible.length === 0) {
     grid.replaceChildren(emptyState(t("empty.photos.title")));
+    photoMore.replaceChildren();
     return;
   }
-  grid.replaceChildren(...visible.map((photo) => photoCard(photo, photoTemplate)));
+  const shown = Math.min(state.photosShown, visible.length);
+  grid.replaceChildren(...visible.slice(0, shown).map((photo) => photoCard(photo, photoTemplate)));
+  photoMore.replaceChildren(...(shown < visible.length ? [moreButton(visible.length - shown)] : []));
+}
+
+function moreButton(remaining) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "more-button";
+  button.textContent = t("gallery.more", { n: remaining });
+  button.addEventListener("click", () => {
+    state.photosShown += PHOTOS_PER_STEP;
+    renderPhotos();
+    /* the first picture of the batch that just arrived, so the eye lands there
+       instead of at the top of the gallery */
+    grid.children[state.photosShown - PHOTOS_PER_STEP]?.scrollIntoView({ block: "center" });
+  });
+  return button;
 }
 
 function renderPosts() {
   if (state.posts.length === 0) {
     postsList.replaceChildren(emptyState(t("empty.posts.title")));
+    postsPager.replaceChildren();
     return;
   }
-  postsList.replaceChildren(...state.posts.map((post) => postCard(post, postTemplate, seriesTitleOf(post.series))));
+  const pages = Math.max(1, Math.ceil(state.posts.length / POSTS_PER_PAGE));
+  state.postsPage = Math.min(Math.max(state.postsPage, 1), pages);
+  const start = (state.postsPage - 1) * POSTS_PER_PAGE;
+  const page = state.posts.slice(start, start + POSTS_PER_PAGE);
+  postsList.replaceChildren(...page.map((post) => postCard(post, postTemplate, seriesTitleOf(post.series))));
+  postsPager.replaceChildren(...(pages > 1 ? [pager(pages)] : []));
+}
+
+function pager(pages) {
+  const nav = document.createElement("nav");
+  nav.className = "pager";
+  nav.setAttribute("aria-label", t("pager.aria"));
+  nav.append(pagerStep(-1, "pager.prev", state.postsPage > 1));
+  for (let page = 1; page <= pages; page += 1) {
+    nav.append(pagerNumber(page));
+  }
+  nav.append(pagerStep(1, "pager.next", state.postsPage < pages));
+  return nav;
+}
+
+function pagerNumber(page) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pager-page";
+  button.textContent = String(page);
+  button.setAttribute("aria-current", String(page === state.postsPage));
+  button.addEventListener("click", () => goToPostsPage(page));
+  return button;
+}
+
+function pagerStep(delta, labelKey, enabled) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pager-step";
+  button.textContent = t(labelKey);
+  button.disabled = !enabled;
+  button.addEventListener("click", () => goToPostsPage(state.postsPage + delta));
+  return button;
+}
+
+function goToPostsPage(page) {
+  state.postsPage = page;
+  renderPosts();
+  requireElement("#posts").scrollIntoView({ block: "start" });
 }
 
 function renderSeries() {

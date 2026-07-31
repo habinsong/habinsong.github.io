@@ -251,3 +251,86 @@ h2 {
 .site-footer p {
   margin: 0;
 }
+
+/* ── paging ─────────────────────────────────────────────── */
+/* The gallery is scrolled, so it grows a screenful at a time. The post list is
+   read, so it is cut into pages you can point at. */
+
+#posts-pager:empty,
+#gallery-more:empty {
+  display: none;
+}
+
+.more-button {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-10);
+  appearance: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  padding: var(--space-4) 0 0;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.more-button:hover {
+  color: var(--ink);
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-10);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.pager-page,
+.pager-step {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  min-width: 28px;
+  padding: var(--space-2) var(--space-1);
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.pager-page:hover:not([aria-current="true"]),
+.pager-step:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.pager-page[aria-current="true"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.pager-step:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.pager-step:first-child {
+  margin-right: auto;
+}
+
+.pager-step:last-child {
+  margin-left: auto;
+}

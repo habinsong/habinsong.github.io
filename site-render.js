@@ -2,6 +2,12 @@ import { t, tCount } from "./i18n.js";
 import { normalizePhoto } from "./site-data.js";
 import { isRecord, safeUrl, text } from "./site-utils.js";
 
+// Every post is its own page. The hash route still works for links that were
+// shared before, but nothing on the site points at it any more.
+export function postHref(id) {
+  return `/posts/${encodeURIComponent(id)}/`;
+}
+
 export function photoCard(photo, template, options = {}) {
   if (!(template instanceof HTMLTemplateElement)) {
     throw new Error("Photo template is not available");
@@ -57,7 +63,7 @@ export function postCard(post, template, seriesTitle = "") {
   }
 
   meta.textContent = [post.date, seriesTitle, ...post.tags].filter(Boolean).join(" · ");
-  link.href = `#post=${encodeURIComponent(post.id)}`;
+  link.href = postHref(post.id);
   link.textContent = post.title;
   excerpt.textContent = post.excerpt;
   return card;
@@ -108,7 +114,7 @@ export function archiveYear(year, posts, photoCount, seriesTitleOf) {
     for (const post of posts) {
       const item = document.createElement("li");
       const link = document.createElement("a");
-      link.href = `#post=${encodeURIComponent(post.id)}`;
+      link.href = postHref(post.id);
       link.textContent = post.title;
       const date = document.createElement("span");
       date.className = "archive-date";
@@ -161,7 +167,7 @@ function postNavLink(summary, labelKey) {
   label.className = "post-nav-label";
   label.textContent = t(labelKey);
   const link = document.createElement("a");
-  link.href = `#post=${encodeURIComponent(summary.id)}`;
+  link.href = postHref(summary.id);
   link.textContent = summary.title;
   slot.append(label, link);
   return slot;
