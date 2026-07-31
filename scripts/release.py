@@ -293,6 +293,7 @@ def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> 
         robots.append(f"Sitemap: {base_url}/sitemap.xml")
         (OUT / "sitemap.xml").write_text(sitemap_xml(base_url), encoding="utf-8")
         (OUT / "feed.xml").write_text(feed_xml(site, base_url, posts_index), encoding="utf-8")
+        (OUT / "rss.xml").write_text(rss_xml(site, base_url, posts_index), encoding="utf-8")
     else:
         print("feed-skip: set baseUrl in site.json to generate feed.xml and sitemap.xml")
     for extra in site.get("sitemaps", []):
@@ -342,6 +343,45 @@ def feed_xml(site: dict[str, Any], base_url: str, posts_index: dict[str, Any]) -
         ]
     lines.append("</feed>")
     return "\n".join(lines) + "\n"
+
+
+def rss_xml(site: dict[str, Any], base_url: str, posts_index: dict[str, Any]) -> str:
+    published = [post for post in posts_index["posts"] if post["status"] == "published"]
+    dates = sorted(post.get("date", "") for post in published if isinstance(post.get("date"), str))
+    title = escape(site["title"])
+    description = escape(site.get("description") or site["title"])
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+        "  <channel>",
+        f"    <title>{title}</title>",
+        f"    <link>{escape(base_url)}/</link>",
+        f"    <description>{description}</description>",
+        "    <language>ko</language>",
+        f"    <lastBuildDate>{rfc822(dates[-1] if dates and dates[-1] else '')}</lastBuildDate>",
+        f"    <atom:link href={quoteattr(base_url + '/rss.xml')} rel=\"self\" type=\"application/rss+xml\"/>",
+    ]
+    for post in published:
+        link = f"{base_url}/#post={post['id']}"
+        lines += [
+            "    <item>",
+            f"      <title>{escape(post['title'])}</title>",
+            f"      <link>{escape(link)}</link>",
+            f"      <guid isPermaLink=\"false\">{escape(link)}</guid>",
+            f"      <pubDate>{rfc822(post.get('date', ''))}</pubDate>",
+            f"      <description>{escape(post.get('excerpt', ''))}</description>",
+            "    </item>",
+        ]
+    lines += ["  </channel>", "</rss>"]
+    return "\n".join(lines) + "\n"
+
+
+def rfc822(date: str) -> str:
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date or ""):
+        moment = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    else:
+        moment = datetime.now(timezone.utc)
+    return moment.strftime("%a, %d %b %Y %H:%M:%S +0000")
 
 
 def rfc3339(date: str) -> str:
