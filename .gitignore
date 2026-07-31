@@ -10,3 +10,6 @@
 .claude/
 .omo/
 .playwright-mcp/
+
+# 디자인 문서는 로컬에만 둔다
+/DESIGN.md
