@@ -17,6 +17,7 @@ import {
   setBlockType,
 } from "./editor.js";
 import { readImageInfo } from "./exif.js";
+import { toWebp } from "./webp.js";
 import { renderAssets } from "./admin-render.js";
 import { renderPreview } from "./admin-preview.js";
 import { gcd, isRecord, requireElement, setFormValue, today, uniqueId } from "./admin-utils.js";
@@ -252,19 +253,32 @@ function setDefaultDate() {
 }
 
 async function addAssets(files, options = {}) {
-  const added = [];
-  for (const file of files) {
-    if (file.type.startsWith("image/")) {
-      const asset = newAsset(file);
-      await fillFromImage(asset, file);
-      state.assets.push(asset);
-      persistAsset(asset).catch(() => {});
-      added.push(asset);
-    }
-  }
-  if (added.length === 0) {
+  const images = files.filter((file) => file.type.startsWith("image/"));
+  if (images.length === 0) {
     return;
   }
+
+  validation.textContent = t("a.msg.converting", { n: images.length });
+  const added = [];
+  let before = 0;
+  let after = 0;
+  for (const file of images) {
+    /* the picture is stored as WebP, but the camera data and the real pixel
+       size are read from the file as it came off the card */
+    const stored = await toWebp(file);
+    const asset = newAsset(stored);
+    await fillFromImage(asset, file);
+    state.assets.push(asset);
+    persistAsset(asset).catch(() => {});
+    added.push(asset);
+    before += file.size;
+    after += stored.size;
+  }
+  validation.textContent = t("a.msg.converted", {
+    n: added.length,
+    before: megabytes(before),
+    after: megabytes(after),
+  });
   refreshAssets();
   if (options.insert === true) {
     for (const asset of added) {
@@ -273,6 +287,10 @@ async function addAssets(files, options = {}) {
   }
   editorChanged();
   renderAssetsPanel();
+}
+
+function megabytes(bytes) {
+  return (bytes / 1048576).toFixed(1);
 }
 
 async function fillFromImage(asset, file) {

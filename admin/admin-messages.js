@@ -251,6 +251,18 @@ export const ADMIN_MESSAGES = {
     ja: "下へ",
     zh: "下移",
   },
+  "a.msg.converting": {
+    ko: "사진 {n}장을 WebP로 바꾸는 중…",
+    en: "Converting {n} photograph(s) to WebP…",
+    ja: "写真 {n} 枚を WebP に変換中…",
+    zh: "正在将 {n} 张照片转换为 WebP…",
+  },
+  "a.msg.converted": {
+    ko: "사진 {n}장을 WebP로 바꿨습니다. {before}MB → {after}MB",
+    en: "{n} photograph(s) stored as WebP. {before}MB → {after}MB",
+    ja: "写真 {n} 枚を WebP で保存しました。{before}MB → {after}MB",
+    zh: "已将 {n} 张照片存为 WebP。{before}MB → {after}MB",
+  },
   "a.msg.noassets": {
     ko: "먼저 이미지 파일을 선택하세요.",
     en: "Select image files first.",
