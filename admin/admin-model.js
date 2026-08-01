@@ -1,4 +1,5 @@
 import { t } from "../i18n.js";
+import { copyRichTextRuns } from "../rich-text.js?v=20260802-rich-v1";
 import { EXIF_FIELDS } from "../site-utils.js";
 import { videoId } from "../sound.js";
 import { extensionOf, isRecord, safeUrl, slug, text, uniqueId } from "./admin-utils.js";
@@ -175,11 +176,13 @@ export function validatePost(post) {
 
 function exportBlocks(form, state, block) {
   switch (block.type) {
-    case "paragraph":
-      return splitParagraphs(block.text ?? "");
+    case "paragraph": {
+      const rich = exportedTextBlock(block);
+      return rich.runs === undefined ? splitParagraphs(rich.text) : [rich];
+    }
     case "heading":
     case "quote":
-      return [{ type: block.type, text: text(block.text, "") }];
+      return [exportedTextBlock(block)];
     case "photo": {
       const photo = isRecord(block.photo) ? block.photo : photoFromAsset(form, state, block.assetId);
       if (photo === null) {
@@ -201,6 +204,16 @@ function exportBlocks(form, state, block) {
     default:
       return [];
   }
+}
+
+function exportedTextBlock(block) {
+  const value = text(block.text, "");
+  const exported = { type: block.type, text: value };
+  const runs = copyRichTextRuns(block.runs);
+  if (runs.length > 0 && runs.map((run) => run.text).join("") === value) {
+    exported.runs = runs;
+  }
+  return exported;
 }
 
 function splitParagraphs(value) {

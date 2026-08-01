@@ -90,7 +90,9 @@ blockquote {
 }
 
 .back-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   margin-bottom: var(--space-8);
   color: var(--quiet);
   font-family: var(--font-sans);
@@ -118,6 +120,40 @@ blockquote {
   margin: var(--space-6) 0;
 }
 
+.post-heading,
+.post-body-copy,
+.post-article blockquote {
+  overflow-wrap: anywhere;
+  text-wrap: wrap;
+  white-space: pre-wrap;
+  word-break: normal;
+}
+
+.rich-text strong {
+  font-weight: 700;
+}
+
+.rich-text em {
+  font-style: italic;
+}
+
+.rich-text u {
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.rich-text .text-size-small {
+  font-size: 14px;
+}
+
+.rich-text .text-size-normal {
+  font-size: 17px;
+}
+
+.rich-text .text-size-large {
+  font-size: 21px;
+}
+
 .photo-comment {
   max-width: var(--measure);
   margin: var(--space-2) 0 0;
@@ -129,6 +165,11 @@ blockquote {
 .post-article .photo-card {
   grid-column: auto;
   margin: var(--space-12) 0;
+}
+
+.post-article > .photo-card {
+  max-width: 880px;
+  margin-inline: auto;
 }
 
 .inline-gallery {
@@ -250,6 +291,7 @@ blockquote {
   font-family: var(--font-sans);
   font-size: 12px;
   letter-spacing: 0.1em;
+  min-height: 44px;
   margin-bottom: var(--space-6);
   padding: var(--space-2) var(--space-4);
   transition: color 0.2s ease, border-color 0.2s ease;
@@ -331,7 +373,8 @@ blockquote {
   font-size: 12px;
   font-weight: 300;
   letter-spacing: 0.08em;
-  padding: 0 0 2px;
+  min-height: 44px;
+  padding: var(--space-2) 0;
   text-decoration: none;
 }
 

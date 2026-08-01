@@ -1,16 +1,15 @@
 import { t } from "../i18n.js";
+import { appendRichText } from "../rich-text.js?v=20260802-rich-v1";
 import { uniqueId } from "./admin-utils.js";
 
-// A minimal WYSIWYG canvas for the post schema: plain-text blocks
-// (paragraph/heading/quote) edited directly via contenteditable, and atomic
-// islands (photo/gallery/link-list) as contenteditable="false" nodes whose
-// inner inputs stay interactive. No inline formatting exists in the schema,
-// which keeps the editor away from execCommand entirely.
+// Text blocks are edited directly. Their inline formatting is serialized as
+// small, safe text runs; photo/gallery/link islands remain atomic nodes.
 
 let canvas = null;
 let getAssets = () => [];
 let notifyChange = () => {};
 let onFilesDropped = () => {};
+let savedTextRange = null;
 
 export function initEditor(options) {
   canvas = options.canvas;
@@ -22,6 +21,17 @@ export function initEditor(options) {
     event.preventDefault();
     insertPlainText(event.clipboardData?.getData("text/plain") ?? "");
   });
+
+  canvas.addEventListener("input", () => {
+    savedTextRange = null;
+    updateCanvasEmptyState();
+  });
+  canvas.addEventListener("mouseup", rememberTextSelection);
+  canvas.addEventListener("keyup", rememberTextSelection);
+  canvas.addEventListener("touchend", rememberTextSelection);
+  canvas.addEventListener("mousedown", () => { savedTextRange = null; });
+  document.addEventListener("selectionchange", handleSelectionChange);
+  document.addEventListener("mousedown", preserveSelectionForTextTool, true);
 
   canvas.addEventListener("dragover", (event) => {
     if (hasFiles(event)) {
@@ -58,11 +68,16 @@ export function initEditor(options) {
   });
 
   ensureTextBlock();
+  updateCanvasEmptyState();
+  updateToolbarState();
 }
 
 export function loadBlocks(blocks) {
+  savedTextRange = null;
   canvas.replaceChildren(...blocks.map((block) => blockToNode(block)).filter((node) => node !== null));
   ensureTextBlock();
+  updateCanvasEmptyState();
+  updateToolbarState();
 }
 
 export function serializeBlocks() {
@@ -78,7 +93,9 @@ export function serializeBlocks() {
 
 export function insertTextBlock(type) {
   const tag = type === "heading" ? "h3" : type === "quote" ? "blockquote" : "p";
+  restoreTextSelection();
   if (convertSelectedTextBlock(tag)) {
+    savedTextRange = null;
     return;
   }
   const block = textNode(tag, "");
@@ -95,6 +112,34 @@ export function insertTextBlock(type) {
     canvas.append(block);
   }
   placeCaretAtEnd(block);
+  savedTextRange = null;
+  updateCanvasEmptyState();
+  notifyChange();
+}
+
+export function formatText(command, value = "") {
+  canvas.focus({ preventScroll: true });
+  restoreTextSelection();
+  const selection = window.getSelection();
+  if (selection === null || selection.rangeCount === 0 || rangeBoundaryBlock(selection.getRangeAt(0), "start") === null) {
+    return;
+  }
+
+  document.execCommand("styleWithCSS", false, false);
+  if (command === "size") {
+    const size = { small: "2", normal: "3", large: "5" }[value];
+    if (size === undefined) return;
+    document.execCommand("fontSize", false, size);
+    normalizeFontSizeElements();
+  } else if (["bold", "italic", "underline"].includes(command)) {
+    document.execCommand(command, false);
+  } else {
+    return;
+  }
+
+  captureTextSelection();
+  updateToolbarState();
+  updateCanvasEmptyState();
   notifyChange();
 }
 
@@ -107,6 +152,7 @@ export function insertAllPhotoIslands() {
     insertIsland(photoIsland({ id: uniqueId("photo"), type: "photo", assetId: asset.id, comment: "" }), { silent: true });
   }
   ensureTextBlock();
+  updateCanvasEmptyState();
   notifyChange();
 }
 
@@ -129,6 +175,7 @@ export function removeAssetIslands(assetId) {
     updateGalleryCount(island);
   }
   ensureTextBlock();
+  updateCanvasEmptyState();
   notifyChange();
 }
 
@@ -157,6 +204,7 @@ function insertIsland(island, options = {}) {
     return;
   }
   ensureTextBlock();
+  updateCanvasEmptyState();
   const next = island.nextElementSibling;
   if (next instanceof HTMLElement && next.dataset.block === undefined) {
     placeCaretAtEnd(next);
@@ -175,17 +223,18 @@ function applyIslandControl(island, action) {
     island.nextElementSibling.after(island);
   }
   ensureTextBlock();
+  updateCanvasEmptyState();
   notifyChange();
 }
 
 function blockToNode(block) {
   switch (block.type) {
     case "heading":
-      return textNode("h3", block.text ?? "");
+      return textNode("h3", block.text ?? "", block.runs);
     case "quote":
-      return textNode("blockquote", block.text ?? "");
+      return textNode("blockquote", block.text ?? "", block.runs);
     case "paragraph":
-      return textNode("p", block.text ?? "");
+      return textNode("p", block.text ?? "", block.runs);
     case "photo":
       return photoIsland(block);
     case "gallery":
@@ -226,24 +275,23 @@ function nodeToBlock(node) {
       linksText: node.querySelector(".ed-ll-links")?.value ?? "",
     };
   }
-  const text = node.innerText.replace(/\u00a0/g, " ").trim();
+  const runs = inlineRuns(node);
+  const text = runs.map((run) => run.text).join("");
   if (text.length === 0) {
     return null;
   }
   const tag = node.tagName.toLowerCase();
   const type = tag === "h3" ? "heading" : tag === "blockquote" ? "quote" : "paragraph";
-  return { id: uniqueId(type), type, text };
+  const block = { id: uniqueId(type), type, text };
+  if (runs.some(hasFormatting)) {
+    block.runs = runs;
+  }
+  return block;
 }
 
-function textNode(tag, text) {
+function textNode(tag, text, runs = []) {
   const node = document.createElement(tag);
-  const lines = text.split("\n");
-  lines.forEach((line, index) => {
-    node.append(document.createTextNode(line));
-    if (index < lines.length - 1) {
-      node.append(document.createElement("br"));
-    }
-  });
+  appendRichText(node, text, runs);
   if (text.length === 0) {
     node.append(document.createElement("br"));
   }
@@ -369,7 +417,10 @@ function syncGalleryItems(island, assets, checkedIds = null) {
     const name = document.createElement("span");
     name.textContent = asset.title || asset.file.name;
     item.append(box, thumb, name);
-    box.addEventListener("change", () => updateGalleryCount(island));
+    box.addEventListener("change", () => {
+      updateGalleryCount(island);
+      notifyChange();
+    });
     grid.append(item);
   }
   updateGalleryCount(island);
@@ -449,8 +500,71 @@ function ensureTextBlock() {
   }
 }
 
+function updateCanvasEmptyState() {
+  const hasContent = Array.from(canvas.children).some((node) => {
+    if (node instanceof HTMLElement && node.dataset.block !== undefined) {
+      return true;
+    }
+    return node.textContent.replace(/\u00a0/g, "").trim().length > 0;
+  });
+  canvas.classList.toggle("is-empty", !hasContent);
+}
+
 function isEmptyTextBlock(node) {
   return node.dataset.block === undefined && node.innerText.replace(/\u00a0/g, "").trim().length === 0;
+}
+
+function rememberTextSelection() {
+  const selection = window.getSelection();
+  if (selection === null || selection.rangeCount === 0 || selection.isCollapsed) {
+    savedTextRange = null;
+    return;
+  }
+  captureTextSelection();
+}
+
+function handleSelectionChange() {
+  captureTextSelection();
+  updateToolbarState();
+}
+
+function captureTextSelection() {
+  const selection = window.getSelection();
+  if (selection === null || selection.rangeCount === 0 || selection.isCollapsed) {
+    return;
+  }
+  const range = selection.getRangeAt(0);
+  if (rangeBoundaryBlock(range, "start") === null || rangeBoundaryBlock(range, "end") === null) {
+    savedTextRange = null;
+    return;
+  }
+  savedTextRange = range.cloneRange();
+}
+
+function preserveSelectionForTextTool(event) {
+  const target = event.target instanceof HTMLElement
+    ? event.target.closest("[data-ed-text], [data-ed-format], [data-ed-size]")
+    : null;
+  if (target === null) {
+    return;
+  }
+  captureTextSelection();
+  event.preventDefault();
+}
+
+function restoreTextSelection() {
+  const selection = window.getSelection();
+  if (selection !== null && selection.rangeCount > 0 && !selection.isCollapsed) {
+    const range = selection.getRangeAt(0);
+    if (rangeBoundaryBlock(range, "start") !== null && rangeBoundaryBlock(range, "end") !== null) {
+      return;
+    }
+  }
+  if (selection === null || savedTextRange === null) {
+    return;
+  }
+  selection.removeAllRanges();
+  selection.addRange(savedTextRange);
 }
 
 function convertSelectedTextBlock(tag) {
@@ -486,7 +600,8 @@ function convertSelectedTextBlock(tag) {
   const updates = [];
   for (let index = 0; index < selectedBlocks.length; index += 1) {
     const block = selectedBlocks[index];
-    const text = textBlockValue(block);
+    const runs = inlineRuns(block);
+    const text = runs.map((run) => run.text).join("");
     const from = block === startBlock ? startOffset : 0;
     const to = block === endBlock ? endOffset : text.length;
     if (from < 0 || to < from || to > text.length) {
@@ -495,15 +610,15 @@ function convertSelectedTextBlock(tag) {
 
     const replacements = [];
     if (block === startBlock && from > 0) {
-      replacements.push(textNode(textBlockTag(block), text.slice(0, from)));
+      replacements.push(textNode(textBlockTag(block), text.slice(0, from), sliceRuns(runs, 0, from)));
     }
     if (to > from) {
-      const selected = textNode(tag, text.slice(from, to));
+      const selected = textNode(tag, text.slice(from, to), sliceRuns(runs, from, to));
       replacements.push(selected);
       converted.push(selected);
     }
     if (block === endBlock && to < text.length) {
-      replacements.push(textNode(textBlockTag(block), text.slice(to)));
+      replacements.push(textNode(textBlockTag(block), text.slice(to), sliceRuns(runs, to, text.length)));
     }
     updates.push({ block, replacements });
   }
@@ -562,7 +677,7 @@ function directTextBlock(node) {
 }
 
 function textBlockValue(node) {
-  return node.innerText.replace(/\u00a0/g, " ");
+  return inlineRuns(node).map((run) => run.text).join("");
 }
 
 function textBlockTag(node) {
@@ -595,6 +710,169 @@ function currentBlock() {
 function currentTextBlock() {
   const block = currentBlock();
   return block !== null && block.dataset.block === undefined ? block : null;
+}
+
+function inlineRuns(block) {
+  const runs = [];
+  for (const child of block.childNodes) {
+    collectInlineRuns(child, {}, runs);
+  }
+  return mergeRuns(trimRuns(runs));
+}
+
+function collectInlineRuns(node, inherited, runs) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const value = node.nodeValue?.replace(/\u00a0/g, " ") ?? "";
+    if (value.length > 0) runs.push({ text: value, ...inherited });
+    return;
+  }
+  if (!(node instanceof HTMLElement)) {
+    return;
+  }
+  if (node.tagName === "BR") {
+    runs.push({ text: "\n", ...inherited });
+    return;
+  }
+
+  const format = { ...inherited };
+  if (["B", "STRONG"].includes(node.tagName)) format.bold = true;
+  if (["I", "EM"].includes(node.tagName)) format.italic = true;
+  if (node.tagName === "U") format.underline = true;
+  if (node.style.fontWeight !== "") {
+    if (node.style.fontWeight === "normal" || Number.parseInt(node.style.fontWeight, 10) < 600) {
+      delete format.bold;
+    } else {
+      format.bold = true;
+    }
+  }
+  if (node.style.fontStyle !== "") {
+    if (node.style.fontStyle === "normal") delete format.italic;
+    else if (node.style.fontStyle === "italic") format.italic = true;
+  }
+  if (node.style.textDecorationLine !== "") {
+    if (node.style.textDecorationLine === "none") delete format.underline;
+    else if (node.style.textDecorationLine.includes("underline")) format.underline = true;
+  }
+  const size = node.dataset.textSize ?? (node.tagName === "FONT" ? fontSizeName(node.getAttribute("size")) : "");
+  if (["small", "normal", "large"].includes(size)) format.size = size;
+  const inlineSize = inlineStyleSize(node.style.fontSize);
+  if (inlineSize !== "") format.size = inlineSize;
+  for (const child of node.childNodes) {
+    collectInlineRuns(child, format, runs);
+  }
+}
+
+function trimRuns(value) {
+  const runs = value.map((run) => ({ ...run }));
+  while (runs.length > 0) {
+    runs[0].text = runs[0].text.replace(/^\s+/, "");
+    if (runs[0].text.length > 0) break;
+    runs.shift();
+  }
+  while (runs.length > 0) {
+    const last = runs.length - 1;
+    runs[last].text = runs[last].text.replace(/\s+$/, "");
+    if (runs[last].text.length > 0) break;
+    runs.pop();
+  }
+  return runs;
+}
+
+function mergeRuns(value) {
+  const merged = [];
+  for (const run of value) {
+    const previous = merged[merged.length - 1];
+    if (previous !== undefined && sameRunFormat(previous, run)) {
+      previous.text += run.text;
+    } else {
+      merged.push({ ...run });
+    }
+  }
+  return merged;
+}
+
+function sameRunFormat(left, right) {
+  return left.bold === right.bold
+    && left.italic === right.italic
+    && left.underline === right.underline
+    && left.size === right.size;
+}
+
+function hasFormatting(run) {
+  return run.bold === true || run.italic === true || run.underline === true || run.size !== undefined;
+}
+
+function sliceRuns(runs, from, to) {
+  const sliced = [];
+  let offset = 0;
+  for (const run of runs) {
+    const start = Math.max(from, offset);
+    const end = Math.min(to, offset + run.text.length);
+    if (end > start) {
+      sliced.push({ ...run, text: run.text.slice(start - offset, end - offset) });
+    }
+    offset += run.text.length;
+    if (offset >= to) break;
+  }
+  return sliced;
+}
+
+function normalizeFontSizeElements() {
+  for (const font of canvas.querySelectorAll("font[size]")) {
+    if (font.closest(".ed-island") !== null) continue;
+    const span = document.createElement("span");
+    span.dataset.textSize = fontSizeName(font.getAttribute("size"));
+    span.append(...font.childNodes);
+    font.replaceWith(span);
+  }
+}
+
+function fontSizeName(value) {
+  const size = Number.parseInt(value ?? "3", 10);
+  if (size <= 2) return "small";
+  if (size >= 5) return "large";
+  return "normal";
+}
+
+function inlineStyleSize(value) {
+  if (value === "") return "";
+  const pixels = Number.parseFloat(value);
+  if (Number.isNaN(pixels)) return "";
+  if (pixels <= 15) return "small";
+  if (pixels >= 20) return "large";
+  return "normal";
+}
+
+function updateToolbarState() {
+  const selection = window.getSelection();
+  const range = selection !== null && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+  const block = range === null ? null : rangeBoundaryBlock(range, "start");
+  const active = block !== null;
+  const blockType = block?.tagName.toLowerCase() === "h3"
+    ? "heading"
+    : block?.tagName.toLowerCase() === "blockquote" ? "quote" : "paragraph";
+
+  for (const button of document.querySelectorAll("[data-ed-text]")) {
+    button.setAttribute("aria-pressed", String(active && button.dataset.edText === blockType));
+  }
+  for (const button of document.querySelectorAll("[data-ed-format]")) {
+    let pressed = false;
+    if (active) {
+      try {
+        pressed = document.queryCommandState(button.dataset.edFormat);
+      } catch {
+        pressed = false;
+      }
+    }
+    button.setAttribute("aria-pressed", String(pressed));
+  }
+
+  const anchor = selection?.anchorNode;
+  const anchorElement = anchor instanceof HTMLElement ? anchor : anchor?.parentElement;
+  const size = active ? anchorElement?.closest("[data-text-size]")?.dataset.textSize ?? "normal" : "";
+  for (const button of document.querySelectorAll("[data-ed-size]")) {
+    button.setAttribute("aria-pressed", String(active && button.dataset.edSize === size));
+  }
 }
 
 function insertPlainText(text) {

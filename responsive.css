@@ -1,3 +1,13 @@
+@media (max-width: 1024px) {
+  .photo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .photo-grid.is-contact {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .lang-bar {
     padding-inline: var(--space-4);
@@ -93,7 +103,8 @@
   .posts-section,
   .gallery-section,
   .series-section,
-  .archive-section {
+  .archive-section,
+  .post-article {
     padding: var(--space-5);
   }
 
@@ -127,6 +138,87 @@
 
 @media (max-width: 520px) {
 
+  .site-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .site-header .wordmark,
+  .site-header .top-nav,
+  .site-header #search-slot {
+    grid-column: 1;
+    width: 100%;
+  }
+
+  .site-header .wordmark {
+    grid-row: 1;
+  }
+
+  .site-header .top-nav {
+    display: grid;
+    grid-row: 2;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .site-header .top-nav a {
+    justify-content: center;
+  }
+
+  .site-header #search-slot {
+    grid-row: 3;
+  }
+
+  .site-header .search,
+  .site-header .search-input,
+  .site-header .search-input:focus {
+    width: 100%;
+  }
+
+  .intro,
+  .posts-section,
+  .post-detail,
+  .series-detail,
+  .gallery-section,
+  .series-section,
+  .archive-section,
+  .about,
+  .site-footer,
+  .search-results {
+    width: min(calc(100% - var(--space-6)), var(--content));
+  }
+
+  .posts-section,
+  .gallery-section,
+  .series-section,
+  .archive-section,
+  .post-article {
+    border-inline: 0;
+    padding-inline: 0;
+  }
+
+  .posts-section,
+  .gallery-section,
+  .series-section,
+  .archive-section,
+  .post-detail,
+  .series-detail {
+    margin-bottom: var(--space-12);
+  }
+
+  .post-card,
+  .series-card,
+  .archive-year {
+    padding: var(--space-4);
+  }
+
+  .photo-card {
+    padding: var(--space-2);
+  }
+
+  .photo-grid {
+    gap: var(--space-5) var(--space-3);
+  }
+
   .photo-grid.is-list .photo-card {
     grid-template-columns: 1fr;
     gap: var(--space-3);
@@ -143,9 +235,13 @@
 
   .pager-page,
   .pager-step {
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 44px;
+    min-height: 44px;
     padding-inline: var(--space-2);
+  }
+
+  .post-nav {
+    gap: var(--space-4);
   }
 }
 
@@ -157,11 +253,12 @@
   }
 
   .site-header #search-slot {
-    width: 62px;
+    width: 100%;
   }
 
   .gallery-section {
-    padding: var(--space-4);
+    padding-block: var(--space-4);
+    padding-inline: 0;
   }
 
   #gallery .section-head {
@@ -179,8 +276,8 @@
 
   #gallery .view-choice {
     font-size: 10px;
-    letter-spacing: 0.04em;
-    padding: 5px 6px;
+    letter-spacing: 0.03em;
+    padding-inline: 8px;
   }
 }
 

@@ -32,6 +32,7 @@ PUBLIC_FILES = [
     "site-utils.js",
     "site-data.js",
     "site-render.js",
+    "rich-text.js",
     "post-page.js",
     "view-menu.js",
     "search.js",
@@ -358,7 +359,8 @@ def validate_block(block: Any, location: str) -> None:
         raise ReleaseError(f"{location} must be an object")
     block_type = required_text(block, "type", location)
     if block_type in {"heading", "paragraph", "quote"}:
-        required_text(block, "text", location)
+        block_text = required_text(block, "text", location)
+        validate_text_runs(block.get("runs"), block_text, location)
     elif block_type == "photo":
         validate_photo_object(block.get("photo"), location)
         comment = block.get("comment")
@@ -383,6 +385,25 @@ def validate_block(block: Any, location: str) -> None:
                 raise ReleaseError(f"{location} link URL must be http(s): {url}")
     else:
         raise ReleaseError(f"Unsupported block type at {location}: {block_type}")
+
+
+def validate_text_runs(value: Any, block_text: str, location: str) -> None:
+    if value is None:
+        return
+    if not isinstance(value, list) or len(value) == 0:
+        raise ReleaseError(f"{location} runs must be a non-empty list")
+    parts: list[str] = []
+    for run in value:
+        if not isinstance(run, dict) or not isinstance(run.get("text"), str) or run["text"] == "":
+            raise ReleaseError(f"{location} run text must be a non-empty string")
+        parts.append(run["text"])
+        for key in ("bold", "italic", "underline"):
+            if key in run and not isinstance(run[key], bool):
+                raise ReleaseError(f"{location} run {key} must be a boolean")
+        if "size" in run and run["size"] not in {"small", "normal", "large"}:
+            raise ReleaseError(f"{location} run size must be small, normal, or large")
+    if "".join(parts) != block_text:
+        raise ReleaseError(f"{location} runs must reproduce block text")
 
 
 def validate_photo_object(value: Any, location: str) -> None:
@@ -694,8 +715,8 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         head.append(f'<meta property="og:image:height" content="{image_size[1]}">')
     head += head_extra
     head += [
-        '<link rel="stylesheet" href="/styles.css?v=20260802-clear-ui">',
-        '<script type="module" src="/post-page.js?v=20260802-clear-ui" defer></script>',
+        '<link rel="stylesheet" href="/styles.css?v=20260802-responsive-v4">',
+        '<script type="module" src="/post-page.js?v=20260802-rich-v1" defer></script>',
     ]
 
     body = [
@@ -935,11 +956,11 @@ def blocks_html(blocks: list[Any]) -> list[str]:
             continue
         kind = block.get("type")
         if kind == "heading":
-            lines.append(f'<h2 class="post-heading">{escape(str(block.get("text", "")))}</h2>')
+            lines.append(f'<h2 class="post-heading rich-text">{rich_text_html(block)}</h2>')
         elif kind == "paragraph":
-            lines.append(f'<p class="post-body-copy">{escape(str(block.get("text", "")))}</p>')
+            lines.append(f'<p class="post-body-copy rich-text">{rich_text_html(block)}</p>')
         elif kind == "quote":
-            lines.append(f"<blockquote>{escape(str(block.get('text', '')))}</blockquote>")
+            lines.append(f'<blockquote class="rich-text">{rich_text_html(block)}</blockquote>')
         elif kind == "photo":
             lines += figure_html(block.get("photo"), str(block.get("comment", "")))
         elif kind == "gallery":
@@ -961,6 +982,32 @@ def blocks_html(blocks: list[Any]) -> list[str]:
                     )
             lines += ["  </ul>", "</section>"]
     return lines
+
+
+def rich_text_html(block: dict[str, Any]) -> str:
+    block_text = str(block.get("text", ""))
+    runs = block.get("runs")
+    if not isinstance(runs, list) or not runs:
+        return escape(block_text)
+    if any(not isinstance(run, dict) or not isinstance(run.get("text"), str) for run in runs):
+        return escape(block_text)
+    if "".join(run["text"] for run in runs) != block_text:
+        return escape(block_text)
+
+    rendered: list[str] = []
+    for run in runs:
+        value = escape(run["text"])
+        if run.get("underline") is True:
+            value = f"<u>{value}</u>"
+        if run.get("italic") is True:
+            value = f"<em>{value}</em>"
+        if run.get("bold") is True:
+            value = f"<strong>{value}</strong>"
+        size = run.get("size")
+        if size in {"small", "normal", "large"}:
+            value = f'<span class="text-size-{size}">{value}</span>'
+        rendered.append(value)
+    return "".join(rendered)
 
 
 def figure_html(photo: Any, comment: str) -> list[str]:

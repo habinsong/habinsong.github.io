@@ -18,7 +18,8 @@
   font-size: 12px;
   font-weight: 300;
   letter-spacing: 0.16em;
-  padding: 0 0 var(--space-1);
+  min-height: 44px;
+  padding: var(--space-2) 0;
   text-transform: uppercase;
 }
 
@@ -169,6 +170,7 @@ figcaption {
   font-size: 12px;
   letter-spacing: 0.1em;
   list-style-position: inside;
+  min-height: 44px;
   padding: var(--space-3) 0;
   text-transform: uppercase;
 }
@@ -221,7 +223,8 @@ figcaption {
   font-size: 13px;
   font-weight: 300;
   letter-spacing: 0.04em;
-  padding: 0 0 2px;
+  min-height: 36px;
+  padding: var(--space-2) 0;
 }
 
 .index-choice:hover {

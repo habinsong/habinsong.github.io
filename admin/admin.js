@@ -1,9 +1,10 @@
 import { currentLocale, initI18n, registerMessages, t } from "../i18n.js";
 import { SITE_MESSAGES } from "../messages.js";
-import { ADMIN_MESSAGES } from "./admin-messages.js?v=20260802-editor-v2";
+import { copyRichTextRuns } from "../rich-text.js?v=20260802-rich-v1";
+import { ADMIN_MESSAGES } from "./admin-messages.js?v=20260802-workspace-v10";
 import { clearPersistedAssets, loadPersistedAssets, persistAsset, removePersistedAsset } from "./asset-store.js";
-import { buildPost, newAsset, normalizeSavedBlock, restoredAsset } from "./admin-model.js?v=20260802-model-v2";
-import { downloadJsonFile, downloadZipFile } from "./admin-export.js?v=20260802-model-v2";
+import { buildPost, newAsset, normalizeSavedBlock, restoredAsset } from "./admin-model.js?v=20260802-model-v3";
+import { downloadJsonFile, downloadZipFile } from "./admin-export.js?v=20260802-model-v3";
 import {
   initEditor,
   insertAllPhotoIslands,
@@ -15,11 +16,12 @@ import {
   removeAssetIslands,
   serializeBlocks,
   insertTextBlock,
-} from "./editor.js?v=20260802-editor-v3";
+  formatText,
+} from "./editor.js?v=20260802-workspace-v10";
 import { readImageInfo } from "./exif.js";
 import { toWebp } from "./webp.js";
-import { renderAssets } from "./admin-render.js?v=20260802-admin-qa";
-import { renderPreview } from "./admin-preview.js?v=20260802-preview-v2";
+import { assetStatusSummary, renderAssets, updateAssetStatuses } from "./admin-render.js?v=20260802-workspace-v10";
+import { renderPreview } from "./admin-preview.js?v=20260802-workspace-v10";
 import { gcd, isRecord, requireElement, setFormValue, today, uniqueId } from "./admin-utils.js";
 
 registerMessages(SITE_MESSAGES);
@@ -29,16 +31,21 @@ initI18n();
 const DRAFT_KEY = "habin-photo-admin-draft-v1";
 const state = { assets: [], blocks: [] };
 let insertOnNextFiles = false;
+let photoStatusMessage = { key: "a.assets.empty", variables: {} };
 
 const form = requireElement("#post-form");
 const photoFiles = requireElement("#photo-files");
+const photoPickerButton = requireElement("#photo-picker-button");
 const photoZone = requireElement("#photo-zone");
+const photoProgress = requireElement("#photo-progress");
+const photoStatus = requireElement("#photo-status");
 const seriesDatalist = requireElement("#series-list");
 const assetList = requireElement("#asset-list");
 const assetCount = requireElement("#asset-count");
 const assetDetailsToggle = requireElement("#asset-details-toggle");
 const canvas = requireElement("#editor-canvas");
 const preview = requireElement("#preview");
+const previewInline = requireElement("#preview-inline");
 const previewDialog = requireElement("#preview-dialog");
 const previewToggle = requireElement("#preview-toggle");
 const previewClose = requireElement("#preview-close");
@@ -83,6 +90,7 @@ window.addEventListener("langchange", () => {
   document.title = t("a.doc.title");
   validation.textContent = "";
   editorNotice.textContent = "";
+  renderPhotoStatus();
   loadBlocks(state.blocks);
   renderAll();
 });
@@ -113,7 +121,7 @@ form.addEventListener("input", (event) => {
 
 form.addEventListener("mousedown", (event) => {
   const target = event.target;
-  if (target instanceof HTMLElement && target.dataset.edText !== undefined) {
+  if (target instanceof HTMLElement && target.closest("[data-ed-text], [data-ed-format], [data-ed-size]") !== null) {
     event.preventDefault();
   }
 });
@@ -123,6 +131,8 @@ photoFiles.addEventListener("change", () => {
   insertOnNextFiles = false;
   photoFiles.value = "";
 });
+
+photoPickerButton.addEventListener("click", () => photoFiles.click());
 
 photoZone.addEventListener("dragover", (event) => {
   event.preventDefault();
@@ -153,6 +163,16 @@ assetList.addEventListener("click", () => {
 form.addEventListener("click", async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
+  const inlineFormat = target.dataset.edFormat;
+  if (inlineFormat !== undefined) {
+    formatText(inlineFormat);
+    return;
+  }
+  const textSize = target.dataset.edSize;
+  if (textSize !== undefined) {
+    formatText("size", textSize);
+    return;
+  }
   const textType = target.dataset.edText;
   if (textType !== undefined) {
     insertTextBlock(textType);
@@ -208,7 +228,9 @@ function handleInsert(kind) {
 async function restoreDraft() {
   try {
     const records = await loadPersistedAssets();
-    state.assets = records.map((record) => ({ ...restoredAsset(record), url: URL.createObjectURL(record.file) }));
+    state.assets = records
+      .sort((left, right) => (left.addedAt ?? Number.MAX_SAFE_INTEGER) - (right.addedAt ?? Number.MAX_SAFE_INTEGER))
+      .map((record) => ({ ...restoredAsset(record), url: URL.createObjectURL(record.file) }));
   } catch (error) {
     console.error(error);
     state.assets = [];
@@ -228,7 +250,12 @@ async function restoreDraft() {
     setFormValue(form, "tags", Array.isArray(draft.tags) ? draft.tags.join(", ") : "");
     setFormValue(form, "excerpt", typeof draft.excerpt === "string" ? draft.excerpt : "");
     applySoundtrack(draft.soundtrack);
-    state.blocks = Array.isArray(draft.blocks) ? draft.blocks.map(normalizeSavedBlock) : [];
+    const savedBlocks = Array.isArray(draft.blocks) ? draft.blocks : [];
+    reorderAssets([
+      ...(Array.isArray(draft.assetOrder) ? draft.assetOrder : []),
+      ...assetIdsFromBlocks(savedBlocks),
+    ]);
+    state.blocks = savedBlocks.map(normalizeSavedBlock);
     loadBlocks(state.blocks);
   } catch (error) {
     console.error(error);
@@ -268,8 +295,12 @@ function importBlock(block) {
   switch (block.type) {
     case "paragraph":
     case "heading":
-    case "quote":
-      return { id: uniqueId(block.type), type: block.type, text: typeof block.text === "string" ? block.text : "" };
+    case "quote": {
+      const imported = { id: uniqueId(block.type), type: block.type, text: typeof block.text === "string" ? block.text : "" };
+      const runs = copyRichTextRuns(block.runs);
+      if (runs.length > 0) imported.runs = runs;
+      return imported;
+    }
     case "photo":
       return isRecord(block.photo)
         ? { id: uniqueId("photo"), type: "photo", photo: block.photo, comment: typeof block.comment === "string" ? block.comment : "" }
@@ -301,23 +332,34 @@ async function addAssets(files, options = {}) {
     return;
   }
 
-  validation.textContent = t("a.msg.converting", { n: images.length });
+  setPhotoStatus("a.msg.converting", { n: images.length });
+  photoProgress.max = images.length;
+  photoProgress.value = 0;
+  photoProgress.hidden = false;
   const added = [];
   let before = 0;
   let after = 0;
-  for (const file of images) {
+  for (const [index, file] of images.entries()) {
+    setPhotoStatus("a.msg.converting.progress", {
+      current: index + 1,
+      total: images.length,
+      file: file.name,
+    });
     /* the picture is stored as WebP, but the camera data and the real pixel
        size are read from the file as it came off the card */
     const stored = await toWebp(file);
     const asset = newAsset(stored);
+    asset.addedAt = Date.now() + index;
     await fillFromImage(asset, file);
     state.assets.push(asset);
     persistAsset(asset).catch(() => {});
     added.push(asset);
     before += file.size;
     after += stored.size;
+    photoProgress.value = index + 1;
   }
-  validation.textContent = t("a.msg.converted", {
+  photoProgress.hidden = true;
+  setPhotoStatus("a.msg.converted", {
     n: added.length,
     before: megabytes(before),
     after: megabytes(after),
@@ -437,6 +479,8 @@ function editorChanged() {
   state.blocks = serializeBlocks();
   saveDraft();
   renderCurrentPreview();
+  updateAssetStatuses(assetList, state);
+  updateAssetListControls();
 }
 
 function renderAll() {
@@ -455,20 +499,72 @@ function renderAssetsPanel() {
 
 function updateAssetListControls() {
   const count = state.assets.length;
-  assetCount.textContent = count === 0 ? "" : t("a.assets.count", { n: count });
+  const summary = assetStatusSummary(state);
+  assetCount.textContent = count === 0 ? "" : t("a.assets.count", { n: count, used: summary.used, ready: summary.ready });
   assetDetailsToggle.hidden = count === 0;
   const details = Array.from(assetList.querySelectorAll(".asset-details"));
   const shouldExpand = details.some((item) => !item.open);
   assetDetailsToggle.textContent = t(shouldExpand ? "a.assets.expand" : "a.assets.collapse");
+  if (count === 0) {
+    setPhotoStatus("a.assets.empty");
+  } else if (photoStatusMessage.key === "a.assets.empty") {
+    setPhotoStatus("a.msg.photos.ready", { n: count });
+  }
+}
+
+function setPhotoStatus(key, variables = {}) {
+  photoStatusMessage = { key, variables };
+  renderPhotoStatus();
+}
+
+function renderPhotoStatus() {
+  photoStatus.removeAttribute("data-i18n");
+  photoStatus.textContent = t(photoStatusMessage.key, photoStatusMessage.variables);
 }
 
 function renderCurrentPreview() {
-  renderPreview(preview, buildPost(form, state), state.assets);
+  const post = buildPost(form, state);
+  renderPreview(preview, post, state.assets);
+  renderPreview(previewInline, post, state.assets);
+}
+
+function reorderAssets(ids) {
+  const position = new Map();
+  for (const id of ids) {
+    if (typeof id === "string" && !position.has(id)) position.set(id, position.size);
+  }
+  state.assets.sort((left, right) => {
+    const leftPosition = position.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+    const rightPosition = position.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+    return leftPosition - rightPosition;
+  });
+}
+
+function assetIdsFromBlocks(blocks) {
+  const ids = [];
+  for (const block of blocks) {
+    if (!isRecord(block)) continue;
+    if (block.type === "photo") {
+      const id = typeof block.assetId === "string" ? block.assetId : isRecord(block.photo) ? block.photo.assetId : "";
+      if (typeof id === "string" && id.length > 0) ids.push(id);
+    }
+    if (block.type === "gallery") {
+      if (Array.isArray(block.assetIds)) ids.push(...block.assetIds);
+      if (Array.isArray(block.photos)) {
+        ids.push(...block.photos.filter(isRecord).map((photo) => photo.assetId).filter((id) => typeof id === "string"));
+      }
+    }
+  }
+  return ids;
 }
 
 function saveDraft() {
   const post = buildPost(form, state);
-  window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...post, blocks: state.blocks }));
+  window.localStorage.setItem(DRAFT_KEY, JSON.stringify({
+    ...post,
+    blocks: state.blocks,
+    assetOrder: state.assets.map((asset) => asset.id),
+  }));
   status.removeAttribute("data-i18n");
   status.textContent = `${t("a.status.saved")} · ${new Date().toLocaleTimeString(currentLocale())}`;
 }
@@ -484,4 +580,5 @@ function resetAll() {
   renderAll();
   editorNotice.textContent = "";
   validation.textContent = t("a.msg.reset");
+  photoProgress.hidden = true;
 }

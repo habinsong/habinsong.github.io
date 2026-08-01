@@ -23,7 +23,7 @@
 
 .lightbox-bar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
 }
@@ -47,7 +47,8 @@
   font-size: 12px;
   font-weight: 300;
   letter-spacing: 0.16em;
-  padding: 0 0 var(--space-1);
+  min-height: 44px;
+  padding: var(--space-2) 0;
   text-transform: uppercase;
 }
 
@@ -95,5 +96,36 @@
 
   .lightbox-stage img {
     max-height: calc(100dvh - 190px);
+  }
+}
+
+@media (max-width: 520px) {
+  .lightbox {
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .lightbox-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0 var(--space-3);
+  }
+
+  #lightbox-mono {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .lightbox-nav {
+    gap: var(--space-3);
+  }
+
+  .lightbox-nav .lightbox-button {
+    flex: 1 1 0;
+  }
+
+  .lightbox-stage img {
+    max-height: calc(100dvh - 230px);
   }
 }

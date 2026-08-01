@@ -9,9 +9,9 @@
     <meta name="robots" content="noindex">
     <title>Admin — Habin Song Photographs</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='3' y='3' width='10' height='10' fill='none' stroke='%23111'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="../styles.css?v=20260802-clear-ui">
-    <link rel="stylesheet" href="admin.css?v=20260802-editor-v2">
-    <script type="module" src="admin.js?v=20260802-editor-v2" defer></script>
+    <link rel="stylesheet" href="../styles.css?v=20260802-responsive-v4">
+    <link rel="stylesheet" href="admin.css?v=20260802-workspace-v11">
+    <script type="module" src="admin.js?v=20260802-workspace-v10" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#composer" data-i18n="a.skip">Skip to composer</a>
@@ -36,7 +36,6 @@
     <main>
       <section class="intro admin-hero" aria-labelledby="admin-title">
         <h1 id="admin-title" data-i18n="a.hero.title">Compose a post</h1>
-        <p class="intro-copy" data-i18n="a.hero.copy">Write the title and body, then add photographs where they belong. Your draft stays in this browser until you export a ZIP bundle.</p>
       </section>
 
       <section id="composer" class="admin-shell" aria-labelledby="composer-title">
@@ -49,47 +48,59 @@
             </div>
           </div>
 
-          <label>
+          <label class="title-field">
             <span data-i18n="a.field.title">Title</span>
             <input name="title" required autocomplete="off" placeholder="A roll from Jongno" data-i18n-attrs="placeholder:a.field.title.ph">
           </label>
 
-          <label>
+          <label class="excerpt-field">
             <span data-i18n="a.field.excerpt">Excerpt</span>
             <textarea name="excerpt" rows="3" required placeholder="A short factual summary for the post list." data-i18n-attrs="placeholder:a.field.excerpt.ph"></textarea>
           </label>
 
           <fieldset class="editor-fieldset">
             <legend data-i18n="a.editor.legend">Body</legend>
-            <p class="field-note" data-i18n="a.editor.note">Type directly in the canvas. Enter starts a new paragraph; insert images by drag and drop or the Photo button.</p>
-            <div class="editor-toolbar-head">
-              <span class="editor-toolbar-label" data-i18n="a.editor.insert">블록 추가</span>
-              <span class="editor-toolbar-help" data-i18n="a.editor.insert.help">누르면 새 작성칸이 바로 생깁니다.</span>
-            </div>
-            <div class="editor-toolbar" role="toolbar" aria-label="Editing tools" data-i18n-attrs="aria-label:a.editor.toolbar.aria">
-              <div class="editor-toolbar-group">
-                <button type="button" data-ed-text="paragraph" data-i18n="a.block.paragraph">Paragraph</button>
-                <button type="button" data-ed-text="heading" data-i18n="a.block.heading">Heading</button>
-                <button type="button" data-ed-text="quote" data-i18n="a.block.quote">Quote</button>
-              </div>
-              <div class="editor-toolbar-group">
-                <button type="button" data-ed-insert="photo" data-i18n="a.block.photo">Add photo</button>
-              </div>
-              <div class="editor-toolbar-group is-secondary">
-                <button type="button" data-ed-insert="all-photos" data-i18n="a.block.add-all">Add all photos</button>
-                <button type="button" data-ed-insert="gallery" data-i18n="a.block.gallery">Gallery</button>
-                <button type="button" data-ed-insert="link-list" data-i18n="a.block.link-list">Links</button>
-              </div>
+            <div class="editor-toolbar" role="toolbar" aria-label="Editing tools" aria-controls="editor-canvas" data-i18n-attrs="aria-label:a.editor.toolbar.aria">
+              <button type="button" data-ed-text="paragraph" data-i18n="a.block.paragraph">Paragraph</button>
+              <button type="button" data-ed-text="heading" data-i18n="a.block.heading">Heading</button>
+              <button type="button" data-ed-text="quote" data-i18n="a.block.quote">Quote</button>
+              <span class="editor-toolbar-divider" aria-hidden="true"></span>
+              <button type="button" data-ed-format="bold" aria-pressed="false" data-i18n="a.format.bold">Bold</button>
+              <button type="button" data-ed-format="italic" aria-pressed="false" data-i18n="a.format.italic">Italic</button>
+              <button type="button" data-ed-format="underline" aria-pressed="false" data-i18n="a.format.underline">Underline</button>
+              <button type="button" data-ed-size="small" data-i18n="a.format.size.small">Small</button>
+              <button type="button" data-ed-size="normal" data-i18n="a.format.size.normal">Normal</button>
+              <button type="button" data-ed-size="large" data-i18n="a.format.size.large">Large</button>
+              <span class="editor-toolbar-divider" aria-hidden="true"></span>
+              <button type="button" data-ed-insert="photo" data-i18n="a.block.photo">Add photo</button>
+              <button type="button" data-ed-insert="all-photos" data-i18n="a.block.add-all">Add all photos</button>
+              <button type="button" data-ed-insert="gallery" data-i18n="a.block.gallery">Gallery</button>
+              <button type="button" data-ed-insert="link-list" data-i18n="a.block.link-list">Links</button>
             </div>
             <output id="editor-notice" class="editor-notice" aria-live="polite"></output>
-            <div id="editor-canvas" class="editor-canvas" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post body" data-i18n-attrs="aria-label:a.editor.canvas.aria"></div>
+            <div id="editor-canvas" class="editor-canvas" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post body" aria-placeholder="Start writing here" aria-describedby="editor-notice" data-placeholder="Start writing here" data-i18n-attrs="aria-label:a.editor.canvas.aria;aria-placeholder:a.editor.canvas.placeholder;data-placeholder:a.editor.canvas.placeholder"></div>
           </fieldset>
+
+          <aside class="preview-pane" aria-labelledby="preview-pane-title">
+            <header class="preview-pane-head">
+              <h2 id="preview-pane-title" data-i18n="a.preview.compare">작성 미리보기</h2>
+              <span data-i18n="a.preview.live">자동 갱신</span>
+            </header>
+            <article id="preview-inline" class="preview-content preview-inline post-article"></article>
+          </aside>
 
           <fieldset id="photo-zone">
             <legend data-i18n="a.photos.legend">Photographs</legend>
-            <p class="field-note" data-i18n="a.photos.note">Select image files first. Each image can be reused as a post photo block or exported to the gallery manifest.</p>
-            <input id="photo-files" type="file" accept="image/*" multiple>
-            <p class="field-note drop-note" data-i18n="a.photos.drop">You can also drag and drop images here.</p>
+            <div class="photo-picker">
+              <input id="photo-files" class="visually-hidden" type="file" accept="image/*" multiple aria-describedby="photo-status">
+              <div class="photo-picker-copy">
+                <strong data-i18n="a.photos.pick.title">사진 가져오기</strong>
+                <span data-i18n="a.photos.multiple">여러 장 선택 가능</span>
+              </div>
+              <button type="button" id="photo-picker-button" class="photo-picker-button" data-i18n="a.photos.pick">사진 선택</button>
+            </div>
+            <progress id="photo-progress" class="photo-progress" max="1" value="0" hidden></progress>
+            <output id="photo-status" class="photo-status" aria-live="polite" data-i18n="a.assets.empty">선택된 이미지 파일이 없습니다.</output>
             <div class="asset-list-tools">
               <p id="asset-count" class="count" aria-live="polite"></p>
               <button type="button" id="asset-details-toggle" class="asset-details-toggle" hidden></button>
@@ -136,10 +147,7 @@
           </details>
 
           <section id="export" class="export-panel" aria-labelledby="export-title">
-            <div>
-              <h2 id="export-title" data-i18n="a.export.title">Build content bundle</h2>
-              <p class="field-note"><span data-i18n="a.export.note.before">Download the ZIP, extract it at the repository root, then run </span><code>python3 scripts/release.py</code><span data-i18n="a.export.note.after">.</span></p>
-            </div>
+            <h2 id="export-title" data-i18n="a.export.title">Build content bundle</h2>
             <div class="export-actions">
               <button type="button" id="download-zip" data-i18n="a.btn.zip">Download ZIP</button>
               <button type="button" id="download-json" data-i18n="a.btn.json">Download JSON</button>

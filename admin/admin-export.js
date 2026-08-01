@@ -1,5 +1,5 @@
 import { t } from "../i18n.js";
-import { allPhotos, postSummary, stripAssetIds, validatePost } from "./admin-model.js?v=20260802-model-v2";
+import { allPhotos, postSummary, stripAssetIds, validatePost } from "./admin-model.js?v=20260802-model-v3";
 import { downloadBlob, extensionOf, pretty } from "./admin-utils.js";
 import { zipFiles } from "./zip-store.js";
 

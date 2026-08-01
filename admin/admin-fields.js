@@ -2,8 +2,8 @@ import { t } from "../i18n.js";
 import { EXIF_FIELDS } from "../site-utils.js";
 import { positiveNumber } from "./admin-utils.js";
 
-export function textInput(labelText, value, onChange, wide = false) {
-  const label = labelled(labelText, wide);
+export function textInput(labelText, value, onChange, wide = false, field = "") {
+  const label = labelled(labelText, wide, field);
   const input = document.createElement("input");
   input.value = value;
   input.addEventListener("input", () => onChange(input.value));
@@ -12,7 +12,7 @@ export function textInput(labelText, value, onChange, wide = false) {
 }
 
 export function selectInput(labelText, value, options, onChange) {
-  const label = labelled(labelText, false);
+  const label = labelled(labelText, false, "");
   const select = document.createElement("select");
   for (const item of options) {
     const option = document.createElement("option");
@@ -44,6 +44,7 @@ export function assetFields(asset, onChange) {
     textInput(t("a.field.shottime"), asset.time, (value) => { asset.time = value; onChange(); }),
     textInput(t("a.field.format"), asset.format, (value) => { asset.format = value; onChange(); }),
     textInput(t("a.field.subjects"), asset.subjects, (value) => { asset.subjects = value; onChange(); }, true),
+    textInput(t("a.field.alt"), asset.alt, (value) => { asset.alt = value; onChange(); }, true, "alt"),
     textInput(t("a.field.ratio.width"), String(asset.width), (value) => { asset.width = positiveNumber(Number(value), 3); onChange(); }),
     textInput(t("a.field.ratio.height"), String(asset.height), (value) => { asset.height = positiveNumber(Number(value), 2); onChange(); }),
     /* what the frame was made with: read from EXIF where there is any, typed
@@ -54,13 +55,13 @@ export function assetFields(asset, onChange) {
       (value) => { exif[field] = value; onChange(); },
     )),
     textInput(t("a.field.details"), asset.details, (value) => { asset.details = value; onChange(); }, true),
-    textInput(t("a.field.alt"), asset.alt, (value) => { asset.alt = value; onChange(); }, true),
   ];
 }
 
-function labelled(textValue, wide) {
+function labelled(textValue, wide, field) {
   const label = document.createElement("label");
   if (wide) label.className = "wide";
+  if (field.length > 0) label.dataset.field = field;
   const span = document.createElement("span");
   span.textContent = textValue;
   label.append(span);

@@ -2,7 +2,7 @@ import { currentLocale, initI18n, registerMessages, t, tCount } from "./i18n.js"
 import { openLightbox } from "./lightbox.js";
 import { SITE_MESSAGES } from "./messages.js?v=20260802-clear-ui";
 import { loadJson, loadPhotos, loadPosts, loadSeries, normalizePostDetail } from "./site-data.js";
-import { archiveYear, collectPostPhotos, lightboxItem, photoCard, placeHref, postArticle, postCard, postHref, postNav, seriesCard } from "./site-render.js";
+import { archiveYear, collectPostPhotos, lightboxItem, photoCard, placeHref, postArticle, postCard, postHref, postNav, seriesCard } from "./site-render.js?v=20260802-rich-v1";
 import { LIGHTS, ORIENTATIONS, SEASONS, emptyState, requireElement } from "./site-utils.js";
 import { mountShare } from "./share.js?v=20260802-clear-ui";
 import { mountSound } from "./sound.js";

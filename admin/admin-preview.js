@@ -1,4 +1,5 @@
 import { t } from "../i18n.js";
+import { appendRichText } from "../rich-text.js?v=20260802-rich-v1";
 
 export function renderPreview(preview, post, assets) {
   const title = document.createElement("h1");
@@ -15,11 +16,11 @@ export function renderPreview(preview, post, assets) {
 function previewBlock(block, assets) {
   switch (block.type) {
     case "heading":
-      return textNode("h2", block.text, "post-heading");
+      return textNode("h2", block.text, "post-heading", block.runs);
     case "paragraph":
-      return textNode("p", block.text, "post-body-copy");
+      return textNode("p", block.text, "post-body-copy", block.runs);
     case "quote":
-      return textNode("blockquote", block.text);
+      return textNode("blockquote", block.text, "", block.runs);
     case "photo":
       return previewPhoto(block.photo, assets, block.comment);
     case "gallery":
@@ -31,10 +32,10 @@ function previewBlock(block, assets) {
   }
 }
 
-function textNode(tag, value, className = "") {
+function textNode(tag, value, className = "", runs = []) {
   const node = document.createElement(tag);
   node.className = className;
-  node.textContent = value;
+  appendRichText(node, value, runs);
   return node;
 }
 
@@ -70,9 +71,8 @@ function previewPhoto(photo, assets, comment = "") {
   const asset = assets.find((item) => item.id === photo.assetId);
   if (asset !== undefined) {
     const image = document.createElement("img");
-    image.src = URL.createObjectURL(asset.file);
+    image.src = asset.url;
     image.alt = photo.alt;
-    image.addEventListener("load", () => URL.revokeObjectURL(image.src), { once: true });
     figure.append(image);
   }
   const caption = document.createElement("figcaption");

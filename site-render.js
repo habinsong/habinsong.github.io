@@ -1,4 +1,5 @@
 import { t, tCount } from "./i18n.js";
+import { appendRichText } from "./rich-text.js?v=20260802-rich-v1";
 import { normalizePhoto } from "./site-data.js";
 import { EXIF_FIELDS, hasExif, isRecord, safeUrl, slug, text } from "./site-utils.js";
 
@@ -323,14 +324,14 @@ function blockNode(block, photoTemplate) {
 function headingBlock(block) {
   const heading = document.createElement("h3");
   heading.className = "post-heading";
-  heading.textContent = text(block.text, t("post.untitled.section"));
+  appendRichText(heading, text(block.text, t("post.untitled.section")), block.runs);
   return heading;
 }
 
 function textBlock(tag, className, block) {
   const node = document.createElement(tag);
   node.className = className;
-  node.textContent = text(block.text, "");
+  appendRichText(node, text(block.text, ""), block.runs);
   return node;
 }
 
