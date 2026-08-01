@@ -1,7 +1,7 @@
-@import url("./base.css");
-@import url("./layout.css");
-@import url("./gallery.css");
-@import url("./posts.css");
-@import url("./lightbox.css");
-@import url("./zine.css");
-@import url("./responsive.css");
+@import url("./base.css?v=20260801-frames");
+@import url("./layout.css?v=20260801-frames");
+@import url("./gallery.css?v=20260801-frames");
+@import url("./posts.css?v=20260801-frames");
+@import url("./lightbox.css?v=20260801-frames");
+@import url("./zine.css?v=20260801-frames");
+@import url("./responsive.css?v=20260801-frames");
