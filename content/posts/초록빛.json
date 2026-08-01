@@ -1,0 +1,76 @@
+{
+  "id": "초록빛",
+  "title": "초록빛",
+  "date": "2026-08-01",
+  "status": "published",
+  "excerpt": "대만, 화롄",
+  "series": "대만-2026",
+  "tags": [
+    "Taiwan",
+    "iPhone"
+  ],
+  "cover": {
+    "id": "img-1453-msafei0k-q38eq7",
+    "title": "IMG_1453",
+    "medium": "digital",
+    "tone": "color",
+    "src": "photos/초록빛/img-1453-msafei0k-q38eq7.jpg",
+    "alt": "iPhone X photo",
+    "place": "Hualien Port Golf Club, Taiwan",
+    "year": "2019",
+    "details": "4mm",
+    "width": 4,
+    "height": 3,
+    "date": "2019-01-28",
+    "time": "13:04",
+    "subjects": [
+      "landscape"
+    ],
+    "exif": {
+      "camera": "Apple iPhone X",
+      "lens": "iPhone X back dual camera 4mm f/1.8",
+      "aperture": "f/1.8",
+      "shutter": "1/3400",
+      "iso": "25"
+    }
+  },
+  "blocks": [
+    {
+      "type": "photo",
+      "photo": {
+        "id": "img-1453-msafei0k-q38eq7",
+        "title": "IMG_1453",
+        "medium": "digital",
+        "tone": "color",
+        "src": "photos/초록빛/img-1453-msafei0k-q38eq7.jpg",
+        "alt": "iPhone X photo",
+        "place": "Hualien Port Golf Club, Taiwan",
+        "year": "2019",
+        "details": "4mm",
+        "width": 4,
+        "height": 3,
+        "date": "2019-01-28",
+        "time": "13:04",
+        "subjects": [
+          "landscape"
+        ],
+        "exif": {
+          "camera": "Apple iPhone X",
+          "lens": "iPhone X back dual camera 4mm f/1.8",
+          "aperture": "f/1.8",
+          "shutter": "1/3400",
+          "iso": "25"
+        }
+      },
+      "comment": "카메라를 놔두고 나온 길에는 그 어떤 곳보다 조화롭고 아름다운 풍경이 기다리고 있었다."
+    },
+    {
+      "type": "paragraph",
+      "text": "비가 그치고 난 구름과 멀리 보이는 높은 산과 가까운 곳에는 작은 언덕과 나무, 쉼터 그리고 뛰어노는 아이들. 무엇보다 완벽했던 순간."
+    },
+    {
+      "type": "paragraph",
+      "text": "빛나는 사람이 될게"
+    }
+  ]
+}
