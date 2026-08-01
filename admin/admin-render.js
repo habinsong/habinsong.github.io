@@ -16,6 +16,13 @@ function assetEditor(asset, onChange) {
   const title = document.createElement("p");
   title.className = "asset-title";
   title.textContent = asset.file.name;
+  const thumb = document.createElement("img");
+  thumb.className = "asset-thumb";
+  thumb.src = asset.url;
+  thumb.alt = "";
+  const heading = document.createElement("div");
+  heading.className = "asset-heading";
+  heading.append(thumb, title);
   const actions = document.createElement("span");
   actions.className = "asset-actions";
   const insert = document.createElement("button");
@@ -27,11 +34,21 @@ function assetEditor(asset, onChange) {
   remove.dataset.deleteAsset = asset.id;
   remove.textContent = t("a.remove");
   actions.append(insert, remove);
-  header.append(title, actions);
+  header.append(heading, actions);
+  const allFields = assetFields(asset, () => onChange(asset));
   const fields = document.createElement("div");
   fields.className = "asset-fields";
-  fields.append(...assetFields(asset, () => onChange(asset)));
-  item.append(header, fields);
+  fields.append(...allFields.slice(0, 11));
+  const advanced = document.createElement("details");
+  advanced.className = "asset-advanced";
+  advanced.open = asset.alt.trim().length === 0;
+  const summary = document.createElement("summary");
+  summary.textContent = t("a.asset.advanced");
+  const advancedFields = document.createElement("div");
+  advancedFields.className = "asset-fields";
+  advancedFields.append(...allFields.slice(11));
+  advanced.append(summary, advancedFields);
+  item.append(header, fields, advanced);
   return item;
 }
 

@@ -371,20 +371,20 @@ function islandHead(labelText) {
   const controls = document.createElement("span");
   controls.className = "ed-island-controls";
   controls.append(
-    islandControl("up", "↑", t("a.move.up")),
-    islandControl("down", "↓", t("a.move.down")),
-    islandControl("remove", "×", t("a.remove")),
+    islandControl("up", t("a.move.up")),
+    islandControl("down", t("a.move.down")),
+    islandControl("remove", t("a.remove")),
   );
   head.append(label, controls);
   return head;
 }
 
-function islandControl(action, glyph, label) {
+function islandControl(action, label) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "ed-ctl";
   button.dataset.isl = action;
-  button.textContent = glyph;
+  button.textContent = label;
   button.setAttribute("aria-label", label);
   button.title = label;
   return button;

@@ -124,7 +124,7 @@ h2 {
   align-items: end;
   justify-content: space-between;
   gap: var(--space-8);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
 .count {
@@ -145,13 +145,18 @@ h2 {
 
 .series-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-8) var(--space-6);
+  grid-template-columns: 1fr;
+  max-width: 760px;
+  gap: 0;
 }
 
 .series-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-6);
   border-top: 1px solid var(--line);
-  padding-top: var(--space-4);
+  padding: var(--space-4) 0;
 }
 
 .series-card h3 {
@@ -163,7 +168,7 @@ h2 {
 }
 
 .series-count {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   color: var(--quiet);
   font-family: var(--font-sans);
   font-size: 12px;
@@ -172,6 +177,7 @@ h2 {
 }
 
 .series-desc {
+  grid-column: 1 / -1;
   margin: var(--space-3) 0 0;
   max-width: var(--measure);
   color: var(--muted);
@@ -434,62 +440,31 @@ h2 {
 }
 
 .view-menu {
-  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
-.view-button {
-  appearance: none;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: transparent;
-  color: var(--quiet);
-  cursor: pointer;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 300;
-  letter-spacing: 0.16em;
-  padding: 0 0 var(--space-1);
-  text-transform: uppercase;
-  transition: color 0.2s ease, border-color 0.2s ease;
-}
-
-.view-button:hover,
-.view-button[aria-expanded="true"] {
-  border-bottom-color: var(--ink);
-  color: var(--ink);
-}
-
-.view-list {
-  position: absolute;
-  right: 0;
-  top: calc(100% + var(--space-2));
-  z-index: 20;
-  margin: 0;
-  padding: var(--space-2) 0;
-  list-style: none;
-  min-width: 160px;
+.view-options {
+  display: inline-flex;
   border: 1px solid var(--line);
-  background: var(--paper, #fff);
-}
-
-.view-list[hidden] {
-  display: none;
+  border-radius: 999px;
+  padding: 2px;
 }
 
 .view-choice {
   appearance: none;
   border: 0;
+  border-radius: 999px;
   background: transparent;
   color: var(--quiet);
   cursor: pointer;
-  display: block;
   font-family: var(--font-sans);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  padding: var(--space-2) var(--space-4);
-  text-align: left;
-  width: 100%;
-  transition: color 0.2s ease;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  padding: 6px 10px;
+  white-space: nowrap;
 }
 
 .view-choice:hover {
@@ -497,11 +472,12 @@ h2 {
 }
 
 .view-choice[aria-checked="true"] {
-  color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 
-.view-choice[aria-checked="true"]::before {
-  content: "· ";
+.view-choice[aria-checked="true"]:hover {
+  color: var(--paper);
 }
 
 /* ── search ─────────────────────────────────────────────── */

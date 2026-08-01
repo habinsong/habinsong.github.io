@@ -27,6 +27,7 @@ registerMessages(ADMIN_MESSAGES);
 initI18n();
 
 const DRAFT_KEY = "habin-photo-admin-draft-v1";
+const PREVIEW_KEY = "habin-photo-admin-preview-v1";
 const state = { assets: [], blocks: [] };
 let insertOnNextFiles = false;
 
@@ -37,6 +38,8 @@ const seriesDatalist = requireElement("#series-list");
 const assetList = requireElement("#asset-list");
 const canvas = requireElement("#editor-canvas");
 const preview = requireElement("#preview");
+const previewPanel = preview.closest(".preview-panel");
+const previewToggle = requireElement("#preview-toggle");
 const status = requireElement("#save-status");
 const validation = requireElement("#validation-output");
 const downloadJson = requireElement("#download-json");
@@ -54,6 +57,7 @@ initEditor({
 });
 
 document.title = t("a.doc.title");
+setPreviewVisibility(window.localStorage.getItem(PREVIEW_KEY) !== "off");
 await restoreDraft();
 renderAll();
 loadSeriesOptions();
@@ -75,9 +79,16 @@ importFile.addEventListener("change", async () => {
 
 window.addEventListener("langchange", () => {
   document.title = t("a.doc.title");
+  updatePreviewToggle();
   validation.textContent = "";
   loadBlocks(state.blocks);
   renderAll();
+});
+
+previewToggle.addEventListener("click", () => {
+  const visible = previewToggle.getAttribute("aria-pressed") !== "true";
+  setPreviewVisibility(visible);
+  window.localStorage.setItem(PREVIEW_KEY, visible ? "on" : "off");
 });
 
 form.addEventListener("submit", (event) => {
@@ -418,6 +429,18 @@ function renderAssetsPanel() {
 
 function renderCurrentPreview() {
   renderPreview(preview, buildPost(form, state), state.assets);
+}
+
+function setPreviewVisibility(visible) {
+  previewPanel.hidden = !visible;
+  previewToggle.setAttribute("aria-pressed", String(visible));
+  previewToggle.closest(".admin-shell")?.classList.toggle("is-preview-hidden", !visible);
+  updatePreviewToggle();
+}
+
+function updatePreviewToggle() {
+  const visible = previewToggle.getAttribute("aria-pressed") === "true";
+  previewToggle.textContent = t(visible ? "a.preview.toggle.on" : "a.preview.toggle.off");
 }
 
 function saveDraft() {

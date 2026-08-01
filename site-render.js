@@ -97,7 +97,7 @@ export function photoCard(photo, template, options = {}) {
   return card;
 }
 
-export function postCard(post, template, seriesTitle = "") {
+export function postCard(post, template, seriesTitle = "", position = 0) {
   if (!(template instanceof HTMLTemplateElement)) {
     throw new Error("Post template is not available");
   }
@@ -110,13 +110,19 @@ export function postCard(post, template, seriesTitle = "") {
   if (!(card instanceof HTMLElement) || meta === null || !(link instanceof HTMLAnchorElement) || excerpt === null) {
     throw new Error("Post template is incomplete");
   }
+  card.setAttribute("role", "listitem");
 
   /* the tags were printed and did nothing. They pick the list apart now, so
      they are buttons and the series is a link to its own page. */
+  const number = document.createElement("span");
+  number.className = "post-number";
+  number.setAttribute("aria-hidden", "true");
+  number.textContent = position > 0 ? String(position).padStart(2, "0") : "";
   meta.replaceChildren(...metaParts(post, seriesTitle));
   link.href = postHref(post.id);
   link.textContent = post.title;
   excerpt.textContent = post.excerpt;
+  card.prepend(number);
   return card;
 }
 

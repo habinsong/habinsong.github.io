@@ -29,24 +29,19 @@
 
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: var(--space-16) var(--space-6);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-10) var(--space-4);
 }
 
 .photo-card {
-  grid-column: span 6;
   margin: 0;
-}
-
-.photo-card:nth-child(5n + 1) {
-  grid-column: 1 / -1;
 }
 
 .photo-frame {
   display: grid;
   place-items: center;
   width: 100%;
-  aspect-ratio: var(--ratio, 3 / 2);
+  aspect-ratio: 4 / 3;
   border: 0;
   padding: 0;
   background: var(--surface);
@@ -69,7 +64,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .photo-frame.is-missing {
@@ -95,16 +90,16 @@ figcaption {
 .caption-main {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 300;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .caption-meta {
   margin: var(--space-1) 0 0;
   color: var(--quiet);
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 300;
   letter-spacing: 0.04em;
   line-height: 1.6;
@@ -153,6 +148,34 @@ figcaption {
   display: grid;
   gap: var(--space-3);
   margin-bottom: var(--space-8);
+}
+
+.gallery-filters {
+  margin-bottom: var(--space-8);
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.gallery-filters summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  list-style-position: inside;
+  padding: var(--space-3) 0;
+  text-transform: uppercase;
+}
+
+.gallery-filters[open] summary {
+  color: var(--ink);
+}
+
+.gallery-filters .gallery-index {
+  margin-bottom: var(--space-4);
 }
 
 .index-row {
@@ -289,26 +312,55 @@ figcaption {
 /* ── gallery views ──────────────────────────────────────── */
 
 /* one frame to a row, as large as the column allows */
-.photo-grid.is-essay .photo-card,
-.photo-grid.is-essay .photo-card:nth-child(5n + 1) {
-  grid-column: 1 / -1;
+.gallery-section .darkroom-notes {
+  display: none;
 }
 
 /* four to a row, captions off, every frame in grey — this one is for looking
    across a body of work rather than at any picture in it */
-.photo-grid.is-index {
-  gap: var(--space-6) var(--space-4);
+.photo-grid.is-list {
+  grid-template-columns: 1fr;
+  gap: 0;
 }
 
-.photo-grid.is-index .photo-card,
-.photo-grid.is-index .photo-card:nth-child(5n + 1) {
-  grid-column: span 3;
+.photo-grid.is-list .photo-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-6);
+  border-top: 1px solid var(--line-soft);
+  padding: var(--space-4) 0;
 }
 
-.photo-grid.is-index figcaption {
+.photo-grid.is-list .photo-card:first-child {
+  border-top-color: var(--line);
+}
+
+.photo-grid.is-list figcaption {
+  padding-top: 0;
+}
+
+.photo-grid.is-list .caption-main {
+  font-size: 18px;
+}
+
+.photo-grid.is-list .darkroom-notes {
+  display: grid;
+}
+
+.photo-grid.is-contact figcaption {
   display: none;
 }
 
-.photo-grid.is-index .photo-frame img {
+.photo-grid.is-contact {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+}
+
+.photo-grid.is-contact .photo-frame {
+  aspect-ratio: 1;
+}
+
+.photo-grid.is-contact .photo-frame img {
   filter: grayscale(1);
 }

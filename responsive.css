@@ -44,16 +44,21 @@
     padding: var(--space-12) 0 var(--space-10);
   }
 
-  .post-card,
-  .photo-card,
-  .photo-card:nth-child(5n + 1) {
+  .post-card {
     grid-column: 1 / -1;
   }
 
-  /* two to a row is as dense as a phone can carry */
-  .photo-grid.is-index .photo-card,
-  .photo-grid.is-index .photo-card:nth-child(5n + 1) {
-    grid-column: span 6;
+  .photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .photo-grid.is-contact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .photo-grid.is-list .photo-card {
+    grid-template-columns: minmax(120px, 220px) minmax(0, 1fr);
+    grid-column: 1 / -1;
   }
 
   .posts-list.is-list .post-meta {
@@ -64,6 +69,19 @@
 
   .inline-gallery {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .head-tools {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .photo-grid.is-list .photo-card {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
   }
 }
 

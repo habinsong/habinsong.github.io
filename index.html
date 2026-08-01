@@ -60,7 +60,7 @@
           <div id="posts-view"></div>
         </div>
         <div id="posts-tag"></div>
-        <div id="posts-list" class="posts-list" aria-live="polite"></div>
+        <div id="posts-list" class="posts-list" role="list" aria-live="polite"></div>
         <div id="posts-pager"></div>
       </section>
 
@@ -87,7 +87,10 @@
           <button class="filter-button" type="button" data-filter="bw" aria-pressed="false" data-i18n="filter.bw">B/W</button>
         </div>
 
-        <div id="gallery-index" class="gallery-index"></div>
+        <details id="gallery-index-details" class="gallery-filters">
+          <summary data-i18n="gallery.filters">필터 더 보기</summary>
+          <div id="gallery-index" class="gallery-index"></div>
+        </details>
         <div id="gallery-narrow" class="narrow-bar" aria-live="polite"></div>
 
         <div id="photo-grid" class="photo-grid" aria-live="polite"></div>

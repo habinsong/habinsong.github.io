@@ -56,26 +56,25 @@ const archiveList = requireElement("#archive-list");
 const postsPager = requireElement("#posts-pager");
 const tagBar = requireElement("#posts-tag");
 
-/* Both lists can be read more than one way, so each heading carries a small
-   menu. Cards and the loose grid are the defaults — the ones that suit a
-   handful of entries, which is what the site holds most of the time. */
+/* Both lists can be read more than one way, so each heading carries a visible
+   segmented control. The list view is the quickest way to understand a growing
+   archive, while cards remain available when the reader wants more air. */
 const postsView = viewMenu({
   storageKey: "habin-view-posts",
   options: [
-    { id: "cards", labelKey: "view.posts.cards" },
     { id: "list", labelKey: "view.posts.list" },
+    { id: "cards", labelKey: "view.posts.cards" },
   ],
   onPick: () => renderPosts(),
 });
-/* Three densities for the same wall: the editorial grid it was designed on, a
-   single column for reading one frame at a time, and a plain grey index for
-   looking across a body of work rather than at any one picture. */
+/* Three useful ways into the same wall: a thumbnail grid for scanning, a list
+   for reading captions, and a contact sheet for quickly comparing frames. */
 const galleryView = viewMenu({
   storageKey: "habin-view-gallery",
   options: [
-    { id: "editorial", labelKey: "view.gallery.editorial" },
-    { id: "essay", labelKey: "view.gallery.essay" },
-    { id: "index", labelKey: "view.gallery.index" },
+    { id: "grid", labelKey: "view.gallery.grid" },
+    { id: "list", labelKey: "view.gallery.list" },
+    { id: "contact", labelKey: "view.gallery.contact" },
   ],
   onPick: () => renderPhotos(),
 });
@@ -86,6 +85,7 @@ requireElement("#posts-view").append(postsView.node);
 requireElement("#gallery-view").append(galleryView.node);
 const photoMore = requireElement("#gallery-more");
 const narrowBar = requireElement("#gallery-narrow");
+const filterDetails = requireElement("#gallery-index-details");
 const indexRows = buildIndexRows(requireElement("#gallery-index"));
 const postDetail = requireElement("#post-detail");
 const searchPanel = requireElement("#search-results");
@@ -181,8 +181,9 @@ function visiblePhotos() {
 }
 
 function renderPhotos() {
-  grid.classList.toggle("is-essay", galleryView.value() === "essay");
-  grid.classList.toggle("is-index", galleryView.value() === "index");
+  grid.classList.toggle("is-grid", galleryView.value() === "grid");
+  grid.classList.toggle("is-list", galleryView.value() === "list");
+  grid.classList.toggle("is-contact", galleryView.value() === "contact");
   const visible = visiblePhotos();
   photoCount.textContent = countText(visible.length, state.photos.length);
   if (visible.length === 0) {
@@ -233,7 +234,7 @@ function renderPosts() {
   state.postsPage = Math.min(Math.max(state.postsPage, 1), pages);
   const start = (state.postsPage - 1) * POSTS_PER_PAGE;
   const page = posts.slice(start, start + POSTS_PER_PAGE);
-  postsList.replaceChildren(...page.map((post) => postCard(post, postTemplate, seriesTitleOf(post.series))));
+  postsList.replaceChildren(...page.map((post, index) => postCard(post, postTemplate, seriesTitleOf(post.series), start + index + 1)));
   postsPager.replaceChildren(...(pages > 1 ? [pager(pages)] : []));
 }
 
@@ -466,7 +467,8 @@ function renderSeriesRoute(seriesId, options) {
   } else {
     const list = document.createElement("div");
     list.className = "posts-list";
-    list.append(...posts.map((post) => postCard(post, postTemplate, "")));
+    list.setAttribute("role", "list");
+    list.append(...posts.map((post, index) => postCard(post, postTemplate, "", index + 1)));
     article.append(list);
   }
   seriesDetail.hidden = false;
@@ -521,17 +523,19 @@ function searchResults(query, found) {
   if (found.posts.length > 0) {
     const list = document.createElement("div");
     list.className = "posts-list is-list";
-    list.append(...found.posts.map((post) => postCard(
+    list.setAttribute("role", "list");
+    list.append(...found.posts.map((post, index) => postCard(
       { ...post, tags: post.tags, series: "" },
       postTemplate,
       post.series,
+      index + 1,
     )));
     nodes.push(list);
   }
 
   if (found.photos.length > 0) {
     const strip = document.createElement("div");
-    strip.className = "photo-grid is-index";
+    strip.className = "photo-grid is-contact";
     strip.append(...found.photos.map((photo) => photoCard(photo, photoTemplate)));
     strip.addEventListener("photo:open", (event) => {
       const start = found.photos.findIndex((photo) => photo.id === event.detail.id);
@@ -649,6 +653,7 @@ function buildIndexRows(host) {
 }
 
 function renderIndexes() {
+  filterDetails.open = isNarrowed();
   for (const index of INDEXES) {
     const { row, items } = indexRows[index.key];
     const values = index.values(state.photos);

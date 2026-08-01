@@ -437,6 +437,30 @@ export const ADMIN_MESSAGES = {
     ja: "プレビュー",
     zh: "预览",
   },
+  "a.preview.toggle.on": {
+    ko: "미리보기 켜짐",
+    en: "Preview on",
+    ja: "プレビューオン",
+    zh: "预览开启",
+  },
+  "a.preview.toggle.off": {
+    ko: "미리보기 꺼짐",
+    en: "Preview off",
+    ja: "プレビューオフ",
+    zh: "预览关闭",
+  },
+  "a.soundtrack.more": {
+    ko: "사운드트랙 (선택)",
+    en: "Soundtrack (optional)",
+    ja: "サウンドトラック（任意）",
+    zh: "配乐（可选）",
+  },
+  "a.asset.advanced": {
+    ko: "더 보기 · EXIF와 대체 텍스트",
+    en: "More · EXIF and alt text",
+    ja: "さらに表示 · EXIF と代替テキスト",
+    zh: "更多 · EXIF 与替代文本",
+  },
   "a.preview.untitled": {
     ko: "제목 없는 글",
     en: "Untitled post",

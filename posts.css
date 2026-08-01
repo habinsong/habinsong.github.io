@@ -17,6 +17,15 @@
   padding-top: var(--space-4);
 }
 
+.post-number {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
 .post-card h3 {
   margin: var(--space-3) 0 0;
   max-width: var(--measure);
@@ -262,14 +271,20 @@ blockquote {
   border-top-color: var(--line);
 }
 
+.posts-list.is-list .post-number {
+  order: 1;
+  flex: 0 0 2.5ch;
+  margin: 0;
+}
+
 .posts-list.is-list .post-meta {
-  order: 2;
+  order: 3;
   margin: 0;
   margin-left: auto;
 }
 
 .posts-list.is-list .post-card h3 {
-  order: 1;
+  order: 2;
   margin: 0;
   font-size: clamp(17px, 1.6vw, 21px);
 }

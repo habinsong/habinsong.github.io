@@ -179,6 +179,12 @@ export const SITE_MESSAGES = {
     ja: "白黒",
     zh: "黑白",
   },
+  "gallery.filters": {
+    ko: "필터 더 보기",
+    en: "More filters",
+    ja: "その他のフィルター",
+    zh: "更多筛选",
+  },
   "count.photos.one": {
     ko: "사진 {n}점",
     en: "{n} photograph",
@@ -386,11 +392,14 @@ export const SITE_MESSAGES = {
   "view.gallery.grid": {
     ko: "격자", en: "Grid", ja: "グリッド", zh: "网格",
   },
-  "view.gallery.large": {
-    ko: "크게", en: "Large", ja: "大きく", zh: "大图",
+  "view.gallery.list": {
+    ko: "목록", en: "List", ja: "リスト", zh: "列表",
   },
-  "view.gallery.dense": {
-    ko: "빽빽하게", en: "Dense", ja: "密に", zh: "紧凑",
+  "view.gallery.contact": {
+    ko: "연락처", en: "Contact", ja: "コンタクト", zh: "索引",
+  },
+  "view.menu.aria": {
+    ko: "보기 방식", en: "View mode", ja: "表示方法", zh: "查看方式",
   },
   "tag.clear": {
     ko: "태그 “{tag}” · 글 {n}편 · 지우기",

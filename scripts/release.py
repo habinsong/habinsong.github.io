@@ -568,13 +568,14 @@ def archive_page(site, year, members) -> str:
         '<article class="post-article">',
         '  <a class="back-link" href="/#archive" data-i18n="archive.back">Back to archive</a>',
         f"  <h1>{escape(year)}</h1>",
-        '  <div class="posts-list">',
+        '  <div class="posts-list" role="list">',
     ]
-    for post in members:
+    for position, post in enumerate(members, start=1):
         parts = [post.get("date", ""), titles.get(post.get("series", ""), "")]
         parts += [str(tag) for tag in post.get("tags", []) if tag]
         main += [
-            '    <article class="post-card">',
+            '    <article class="post-card" role="listitem">',
+            f'      <span class="post-number" aria-hidden="true">{position:02d}</span>',
             f'      <p class="post-meta">{escape(" · ".join(part for part in parts if part))}</p>',
             f'      <h3><a class="post-link" href="/posts/{quote(post["id"])}/">{escape(post["title"])}</a></h3>',
             f'      <p class="post-excerpt">{escape(post.get("excerpt", ""))}</p>',
@@ -854,12 +855,13 @@ def related_html(summary, siblings, titles) -> list[str]:
     lines = [
         '<section class="related">',
         '  <h2 data-i18n="post.related">Related posts</h2>',
-        '  <div class="posts-list">',
+        '  <div class="posts-list" role="list">',
     ]
-    for _, _, other in scored[:4]:
+    for position, (_, _, other) in enumerate(scored[:4], start=1):
         parts = [other.get("date", ""), titles.get(other.get("series", ""), "")]
         lines += [
-            '    <article class="post-card">',
+            '    <article class="post-card" role="listitem">',
+            f'      <span class="post-number" aria-hidden="true">{position:02d}</span>',
             f'      <p class="post-meta">{escape(" · ".join(part for part in parts if part))}</p>',
             f'      <h3><a class="post-link" href="/posts/{quote(other["id"])}/">{escape(other["title"])}</a></h3>',
             "    </article>",
@@ -879,12 +881,13 @@ def series_page(site, entry, members) -> str:
     ]
     if entry.get("description"):
         main.append(f'  <p class="post-lead">{escape(str(entry["description"]))}</p>')
-    main.append('  <div class="posts-list">')
-    for post in members:
+    main.append('  <div class="posts-list" role="list">')
+    for position, post in enumerate(members, start=1):
         tags = " · ".join(str(tag) for tag in post.get("tags", []) if tag)
         meta_line = " · ".join(part for part in [post.get("date", ""), tags] if part)
         main += [
-            '    <article class="post-card">',
+            '    <article class="post-card" role="listitem">',
+            f'      <span class="post-number" aria-hidden="true">{position:02d}</span>',
             f'      <p class="post-meta">{escape(meta_line)}</p>',
             f'      <h3><a class="post-link" href="/posts/{quote(post["id"])}/">{escape(post["title"])}</a></h3>',
             f'      <p class="post-excerpt">{escape(post.get("excerpt", ""))}</p>',

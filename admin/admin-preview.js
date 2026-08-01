@@ -37,7 +37,7 @@ function textNode(tag, value) {
 
 function previewGallery(photos, assets) {
   const group = document.createElement("div");
-  group.className = "preview-link-list";
+  group.className = "preview-gallery";
   group.append(...photos.map((photo) => previewPhoto(photo, assets)));
   return group;
 }
