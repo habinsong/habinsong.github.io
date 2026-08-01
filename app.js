@@ -22,6 +22,7 @@ const state = {
   detailPhotos: [],
   postsPage: 1,
   photosShown: PHOTOS_PER_STEP,
+  tag: "",
 };
 const grid = requireElement("#photo-grid");
 const photoCount = requireElement("#gallery-count");
@@ -29,6 +30,7 @@ const postsList = requireElement("#posts-list");
 const seriesList = requireElement("#series-list");
 const archiveList = requireElement("#archive-list");
 const postsPager = requireElement("#posts-pager");
+const tagBar = requireElement("#posts-tag");
 const photoMore = requireElement("#gallery-more");
 const postDetail = requireElement("#post-detail");
 const seriesDetail = requireElement("#series-detail");
@@ -46,6 +48,10 @@ for (const button of filterButtons) {
     renderPhotos();
   });
 }
+
+postsList.addEventListener("tag:pick", (event) => {
+  pickTag(event.detail.tag);
+});
 
 grid.addEventListener("photo:open", (event) => {
   const visible = visiblePhotos();
@@ -119,18 +125,40 @@ function moreButton(remaining) {
   return button;
 }
 
+function taggedPosts() {
+  return state.tag === "" ? state.posts : state.posts.filter((post) => post.tags.includes(state.tag));
+}
+
+function pickTag(tag) {
+  state.tag = state.tag === tag ? "" : tag;
+  state.postsPage = 1;
+  renderPosts();
+  requireElement("#posts").scrollIntoView({ block: "start" });
+}
+
 function renderPosts() {
-  if (state.posts.length === 0) {
-    postsList.replaceChildren(emptyState(t("empty.posts.title")));
+  const posts = taggedPosts();
+  tagBar.replaceChildren(...(state.tag === "" ? [] : [activeTagChip()]));
+  if (posts.length === 0) {
+    postsList.replaceChildren(emptyState(t(state.tag === "" ? "empty.posts.title" : "empty.tagged.title")));
     postsPager.replaceChildren();
     return;
   }
-  const pages = Math.max(1, Math.ceil(state.posts.length / POSTS_PER_PAGE));
+  const pages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE));
   state.postsPage = Math.min(Math.max(state.postsPage, 1), pages);
   const start = (state.postsPage - 1) * POSTS_PER_PAGE;
-  const page = state.posts.slice(start, start + POSTS_PER_PAGE);
+  const page = posts.slice(start, start + POSTS_PER_PAGE);
   postsList.replaceChildren(...page.map((post) => postCard(post, postTemplate, seriesTitleOf(post.series))));
   postsPager.replaceChildren(...(pages > 1 ? [pager(pages)] : []));
+}
+
+function activeTagChip() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "tag-clear";
+  button.textContent = t("tag.clear", { tag: state.tag, n: taggedPosts().length });
+  button.addEventListener("click", () => pickTag(state.tag));
+  return button;
 }
 
 function pager(pages) {

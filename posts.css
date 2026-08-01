@@ -193,3 +193,51 @@ blockquote {
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
 }
+
+/* ── tags ───────────────────────────────────────────────── */
+/* Tags were printed and did nothing. They cut the list down now. */
+
+.post-meta .meta-dot {
+  margin: 0 var(--space-2);
+}
+
+.post-meta .tag,
+.post-meta .post-series {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.post-meta .tag:hover,
+.post-meta .post-series:hover {
+  border-bottom-color: currentColor;
+  color: var(--ink);
+}
+
+.tag-clear {
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-6);
+  padding: var(--space-2) var(--space-4);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tag-clear:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}

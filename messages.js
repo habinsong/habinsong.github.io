@@ -359,6 +359,18 @@ export const SITE_MESSAGES = {
     ja: "デジタルとフィルムで写真を撮っています。お問い合わせはメールでお願いします。",
     zh: "我用数码与胶片拍摄。如有事宜，请发邮件联系。",
   },
+  "tag.clear": {
+    ko: "태그 “{tag}” · 글 {n}편 · 지우기",
+    en: "Tag “{tag}” · {n} post(s) · clear",
+    ja: "タグ「{tag}」· {n} 件 · 解除",
+    zh: "标签「{tag}」· {n} 篇 · 清除",
+  },
+  "empty.tagged.title": {
+    ko: "이 태그로 쓴 글이 없습니다.",
+    en: "No posts with this tag.",
+    ja: "このタグの記事はありません。",
+    zh: "没有该标签的文章。",
+  },
   "gallery.more": {
     ko: "사진 {n}장 더 보기",
     en: "Show {n} more",

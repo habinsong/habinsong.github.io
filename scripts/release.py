@@ -97,6 +97,7 @@ def main() -> None:
     validate_post_files(posts_index)
     build_release()
     write_post_pages(site, posts_index)
+    write_series_pages(site, posts_index)
     write_discovery_files(site, posts_index)
     print(f"release-ok: {OUT}")
 
@@ -288,56 +289,80 @@ def build_release() -> None:
             ignore = shutil.ignore_patterns("*.merge.json", "example-post.json")
             shutil.copytree(source, target, ignore=ignore)
 
-
-# A post used to live behind "#post=<id>", which search engines read as one
-# address for the whole site. Each published post is written as its own page
-# under /posts/<id>/ so it can be found, linked and shared on its own.
+# A post used to live behind "#post=<id>", which a search engine reads as one
+# address for the whole site. Posts and series are written as pages of their
+# own so each can be found, linked and shared on its own.
 
 def write_post_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
     posts = published_posts(posts_index)
+    titles = series_titles()
     for position, summary in enumerate(posts):
         post = read_json(ROOT / summary["path"])
         newer = posts[position - 1] if position > 0 else None
         older = posts[position + 1] if position + 1 < len(posts) else None
-        directory = OUT / "posts" / summary["id"]
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / "index.html").write_text(post_page(site, summary, post, newer, older), encoding="utf-8")
+        write_page(OUT / "posts" / summary["id"], post_page(site, summary, post, titles, newer, older))
     if posts:
         print(f"posts: {len(posts)} page(s)")
 
 
-def post_page(site, summary, post, newer, older) -> str:
-    base_url = site["baseUrl"].rstrip("/")
-    title = summary["title"]
-    excerpt = summary.get("excerpt", "")
-    url = post_url(base_url, summary["id"]) if base_url else ""
+def write_series_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
+    posts = published_posts(posts_index)
+    count = 0
+    for entry in read_json(ROOT / "series.json").get("series", []):
+        if not isinstance(entry, dict) or not isinstance(entry.get("id"), str):
+            continue
+        members = [post for post in posts if post.get("series") == entry["id"]]
+        if not members:
+            continue
+        write_page(OUT / "series" / entry["id"], series_page(site, entry, members))
+        count += 1
+    if count:
+        print(f"series: {count} page(s)")
+
+
+def write_page(directory: Path, html: str) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "index.html").write_text(html, encoding="utf-8")
+
+
+def series_titles() -> dict[str, str]:
+    titles: dict[str, str] = {}
+    for entry in read_json(ROOT / "series.json").get("series", []):
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            titles[entry["id"]] = str(entry.get("title", ""))
+    return titles
+
+
+def author_of(site: dict[str, Any]) -> str:
+    return str(site.get("author") or site["title"])
+
+
+def page(site: dict[str, Any], *, title: str, description: str, url: str,
+         image: str, kind: str, head_extra: list[str], main: list[str]) -> str:
     head = [
         '<meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
-        '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'self\'; '
-        'style-src \'self\'; img-src \'self\' data: https:; connect-src \'self\'; base-uri \'none\'; form-action \'none\'">',
+        "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'self'; "
+        "style-src 'self'; img-src 'self' data: https:; connect-src 'self'; base-uri 'none'; form-action 'none'\">",
         '<meta name="referrer" content="strict-origin-when-cross-origin">',
         '<meta name="color-scheme" content="light">',
         f"<title>{escape(title)} — {escape(site['title'])}</title>",
-        f"<meta name=\"description\" content={quoteattr(excerpt)}>",
+        f"<meta name=\"description\" content={quoteattr(description)}>",
         f"<meta property=\"og:title\" content={quoteattr(title)}>",
-        f"<meta property=\"og:description\" content={quoteattr(excerpt)}>",
-        '<meta property="og:type" content="article">',
+        f"<meta property=\"og:description\" content={quoteattr(description)}>",
+        f'<meta property="og:type" content="{kind}">',
+        '<meta name="twitter:card" content="summary_large_image">',
     ]
     if url:
-        head += [
-            f'<link rel="canonical" href="{escape(url)}">',
-            f"<meta property=\"og:url\" content=\"{escape(url)}\">",
-        ]
-    cover = first_photo(post)
-    if cover and base_url:
-        head.append(f"<meta property=\"og:image\" content=\"{escape(base_url)}/{escape(cover)}\">")
+        head += [f'<link rel="canonical" href="{escape(url)}">', f'<meta property="og:url" content="{escape(url)}">']
+    if image:
+        head.append(f'<meta property="og:image" content="{escape(image)}">')
+    head += head_extra
     head += [
         '<link rel="stylesheet" href="/styles.css">',
         '<script type="module" src="/post-page.js" defer></script>',
     ]
 
-    meta_line = " · ".join(part for part in [summary.get("date", ""), series_title(site, summary)] if part)
     body = [
         '<a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>',
         '<div class="lang-bar"><nav class="lang-switch" aria-label="Language" data-i18n-attrs="aria-label:lang.aria">',
@@ -347,7 +372,7 @@ def post_page(site, summary, post, newer, older) -> str:
         '  <button type="button" data-lang="zh" lang="zh-Hans" aria-pressed="false">中文</button>',
         "</nav></div>",
         '<header class="site-header">',
-        f"  <a class=\"wordmark\" href=\"/\">{escape(site['title'].split()[0])} {escape(site['title'].split()[1] if len(site['title'].split()) > 1 else '')}</a>",
+        f'  <a class="wordmark" href="/">{escape(author_of(site))}</a>',
         '  <nav class="top-nav" aria-label="Primary navigation" data-i18n-attrs="aria-label:nav.aria">',
         '    <a href="/#posts" data-i18n="nav.posts">Posts</a>',
         '    <a href="/#series" data-i18n="nav.series">Series</a>',
@@ -358,19 +383,13 @@ def post_page(site, summary, post, newer, older) -> str:
         "</header>",
         '<main id="main">',
         '  <section class="post-detail">',
-        '  <article class="post-article">',
-        '    <a class="back-link" href="/#posts" data-i18n="post.back">Back to posts</a>',
-        f'    <p class="post-meta">{escape(meta_line)}</p>',
-        f"    <h1>{escape(title)}</h1>",
-        f'    <p class="post-lead">{escape(excerpt)}</p>',
     ]
-    body += [f"    {line}" for line in blocks_html(post.get("blocks", []))]
-    body.append("  </article>")
-    body += post_nav_html(older, newer)
-    body += ["  </section>", "</main>"]
+    body += [f"  {line}" for line in main]
     body += [
+        "  </section>",
+        "</main>",
         '<footer class="site-footer">',
-        f"  <p>© {datetime.now(timezone.utc).year} Habin Song</p>",
+        f'  <p>© {datetime.now(timezone.utc).year} {escape(author_of(site))}</p>',
         f"  <a href=\"mailto:{escape(site['email'])}\" data-i18n=\"footer.contact\">Contact</a>",
         "</footer>",
         '<dialog id="lightbox" class="lightbox" aria-label="Image viewer" data-i18n-attrs="aria-label:lb.aria">',
@@ -392,7 +411,7 @@ def post_page(site, summary, post, newer, older) -> str:
         "</dialog>",
     ]
     return (
-        "<!doctype html>\n<html lang=\"ko\">\n<head>\n"
+        '<!doctype html>\n<html lang="ko">\n<head>\n'
         + "\n".join(head)
         + "\n</head>\n<body>\n"
         + "\n".join(body)
@@ -400,14 +419,84 @@ def post_page(site, summary, post, newer, older) -> str:
     )
 
 
-def series_title(site: dict[str, Any], summary: dict[str, Any]) -> str:
-    wanted = summary.get("series", "")
-    if not wanted:
-        return ""
-    for entry in read_json(ROOT / "series.json").get("series", []):
-        if isinstance(entry, dict) and entry.get("id") == wanted:
-            return str(entry.get("title", ""))
-    return ""
+def post_page(site, summary, post, titles, newer, older) -> str:
+    base_url = site["baseUrl"].rstrip("/")
+    url = post_url(base_url, summary["id"]) if base_url else ""
+    series_name = titles.get(summary.get("series", ""), "")
+    cover = first_photo(post)
+    image = f"{base_url}/{cover}" if cover and base_url else ""
+    date = summary.get("date", "")
+
+    head_extra = []
+    if date:
+        head_extra.append(f'<meta property="article:published_time" content="{escape(date)}">')
+    head_extra += ['<script type="application/ld+json">', article_ld(site, summary, url, image, series_name), "</script>"]
+
+    meta_line = " · ".join(part for part in [date, series_name] if part)
+    main = [
+        '<article class="post-article">',
+        '  <a class="back-link" href="/#posts" data-i18n="post.back">Back to posts</a>',
+        f'  <p class="post-meta">{escape(meta_line)}</p>',
+        f"  <h1>{escape(summary['title'])}</h1>",
+        f'  <p class="post-lead">{escape(summary.get("excerpt", ""))}</p>',
+    ]
+    main += [f"  {line}" for line in blocks_html(post.get("blocks", []))]
+    main.append("</article>")
+    main += post_nav_html(older, newer)
+    return page(site, title=summary["title"], description=summary.get("excerpt", ""), url=url,
+                image=image, kind="article", head_extra=head_extra, main=main)
+
+
+def series_page(site, entry, members) -> str:
+    base_url = site["baseUrl"].rstrip("/")
+    url = f"{base_url}/series/{quote(entry['id'])}/" if base_url else ""
+    description = str(entry.get("description") or entry.get("title", ""))
+    main = [
+        '<article class="post-article">',
+        '  <a class="back-link" href="/#series" data-i18n="series.back">Back to series</a>',
+        f"  <h1>{escape(str(entry.get('title', '')))}</h1>",
+    ]
+    if entry.get("description"):
+        main.append(f'  <p class="post-lead">{escape(str(entry["description"]))}</p>')
+    main.append('  <div class="posts-list">')
+    for post in members:
+        tags = " · ".join(str(tag) for tag in post.get("tags", []) if tag)
+        meta_line = " · ".join(part for part in [post.get("date", ""), tags] if part)
+        main += [
+            '    <article class="post-card">',
+            f'      <p class="post-meta">{escape(meta_line)}</p>',
+            f'      <h3><a class="post-link" href="/posts/{quote(post["id"])}/">{escape(post["title"])}</a></h3>',
+            f'      <p class="post-excerpt">{escape(post.get("excerpt", ""))}</p>',
+            "    </article>",
+        ]
+    main.append("  </div>")
+    main.append("</article>")
+    return page(site, title=str(entry.get("title", "")), description=description, url=url,
+                image="", kind="website", head_extra=[], main=main)
+
+
+def article_ld(site, summary, url, image, series_name) -> str:
+    data: dict[str, Any] = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": summary["title"],
+        "description": summary.get("excerpt", ""),
+        "inLanguage": "ko",
+        "author": {"@type": "Person", "name": author_of(site)},
+    }
+    if summary.get("date"):
+        data["datePublished"] = summary["date"]
+        data["dateModified"] = summary["date"]
+    if url:
+        data["mainEntityOfPage"] = url
+        data["url"] = url
+    if image:
+        data["image"] = [image]
+    if series_name:
+        data["isPartOf"] = {"@type": "CreativeWorkSeries", "name": series_name}
+    if summary.get("tags"):
+        data["keywords"] = ", ".join(str(tag) for tag in summary["tags"])
+    return json.dumps(data, ensure_ascii=False, indent=2)
 
 
 def first_photo(post: dict[str, Any]) -> str:
@@ -465,10 +554,13 @@ def figure_html(photo: Any, comment: str) -> list[str]:
     alt = str(photo.get("alt", ""))
     width = photo.get("width") or 3
     height = photo.get("height") or 2
-    caption = " · ".join(part for part in [str(photo.get("title", "")), str(photo.get("place", "")), str(photo.get("year", ""))] if part)
+    caption = " · ".join(
+        part for part in [str(photo.get("title", "")), str(photo.get("place", "")), str(photo.get("year", ""))] if part
+    )
     details = str(photo.get("details", ""))
     lines = [
-        f'<figure class="photo-card" data-medium="{escape(str(photo.get("medium", "digital")))}" data-tone="{escape(str(photo.get("tone", "color")))}">',
+        f'<figure class="photo-card" data-medium="{escape(str(photo.get("medium", "digital")))}"'
+        f' data-tone="{escape(str(photo.get("tone", "color")))}">',
         f'  <button type="button" class="photo-frame" style="--ratio: {width} / {height}">',
         f'    <img src="/{escape(src)}" alt={quoteattr(alt)} loading="lazy" decoding="async">',
         "  </button>",
@@ -514,6 +606,7 @@ def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> 
     for extra in site.get("sitemaps", []):
         robots.append(f"Sitemap: {extra}")
     (OUT / "robots.txt").write_text("\n".join(robots) + "\n", encoding="utf-8")
+    write_home_card(site)
     well_known = OUT / ".well-known"
     well_known.mkdir(exist_ok=True)
     expires = (datetime.now(timezone.utc) + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -521,10 +614,41 @@ def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> 
     (well_known / "security.txt").write_text("\n".join(security) + "\n", encoding="utf-8")
 
 
+# index.html is written by hand and copied as it is, so the picture a share
+# preview needs is put in here, where the photograph list is known.
+def write_home_card(site: dict[str, Any]) -> None:
+    base_url = site["baseUrl"].rstrip("/")
+    photos = read_json(ROOT / "photos.json").get("photos", [])
+    first = next((photo["src"] for photo in photos if isinstance(photo, dict) and photo.get("src")), "")
+    if not base_url or not first:
+        return
+    target = OUT / "index.html"
+    html = target.read_text(encoding="utf-8")
+    if "og:image" in html:
+        return
+    card = (
+        f'    <meta property="og:image" content="{escape(base_url)}/{escape(first)}">\n'
+        '    <meta name="twitter:card" content="summary_large_image">\n'
+    )
+    target.write_text(html.replace("  </head>", card + "  </head>", 1), encoding="utf-8")
+
+
 def sitemap_xml(base_url: str, posts_index: dict[str, Any]) -> str:
-    locs = [f"{base_url}/"]
-    locs += [post_url(base_url, post["id"]) for post in published_posts(posts_index)]
-    body = "".join(f"  <url><loc>{escape(loc)}</loc></url>\n" for loc in locs)
+    posts = published_posts(posts_index)
+    newest = next((post["date"] for post in posts if post.get("date")), "")
+    entries = [(f"{base_url}/", newest)]
+    entries += [(post_url(base_url, post["id"]), post.get("date", "")) for post in posts]
+
+    titles = series_titles()
+    for series_id in titles:
+        members = [post for post in posts if post.get("series") == series_id]
+        if members:
+            entries.append((f"{base_url}/series/{quote(series_id)}/", members[0].get("date", "")))
+
+    body = ""
+    for loc, date in entries:
+        stamp = f"<lastmod>{escape(date)}</lastmod>" if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date or "") else ""
+        body += f"  <url><loc>{escape(loc)}</loc>{stamp}</url>\n"
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

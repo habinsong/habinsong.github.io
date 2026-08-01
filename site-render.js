@@ -8,6 +8,10 @@ export function postHref(id) {
   return `/posts/${encodeURIComponent(id)}/`;
 }
 
+export function seriesHref(id) {
+  return `/series/${encodeURIComponent(id)}/`;
+}
+
 export function photoCard(photo, template, options = {}) {
   if (!(template instanceof HTMLTemplateElement)) {
     throw new Error("Photo template is not available");
@@ -62,11 +66,47 @@ export function postCard(post, template, seriesTitle = "") {
     throw new Error("Post template is incomplete");
   }
 
-  meta.textContent = [post.date, seriesTitle, ...post.tags].filter(Boolean).join(" · ");
+  /* the tags were printed and did nothing. They pick the list apart now, so
+     they are buttons and the series is a link to its own page. */
+  meta.replaceChildren(...metaParts(post, seriesTitle));
   link.href = postHref(post.id);
   link.textContent = post.title;
   excerpt.textContent = post.excerpt;
   return card;
+}
+
+function metaParts(post, seriesTitle) {
+  const parts = [];
+  if (post.date) {
+    const date = document.createElement("span");
+    date.textContent = post.date;
+    parts.push(date);
+  }
+  if (seriesTitle && post.series) {
+    const link = document.createElement("a");
+    link.className = "post-series";
+    link.href = seriesHref(post.series);
+    link.textContent = seriesTitle;
+    parts.push(link);
+  }
+  for (const tag of post.tags) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tag";
+    button.textContent = tag;
+    button.addEventListener("click", () => {
+      button.dispatchEvent(new CustomEvent("tag:pick", { bubbles: true, detail: { tag } }));
+    });
+    parts.push(button);
+  }
+  return parts.flatMap((node, index) => (index === 0 ? [node] : [separator(), node]));
+}
+
+function separator() {
+  const dot = document.createElement("span");
+  dot.className = "meta-dot";
+  dot.textContent = "·";
+  return dot;
 }
 
 export function seriesCard(series, postCount) {
@@ -74,7 +114,7 @@ export function seriesCard(series, postCount) {
   card.className = "series-card";
   const title = document.createElement("h3");
   const link = document.createElement("a");
-  link.href = `#series=${encodeURIComponent(series.id)}`;
+  link.href = seriesHref(series.id);
   link.textContent = series.title;
   title.append(link);
   const count = document.createElement("p");
