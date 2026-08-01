@@ -9,9 +9,9 @@
     <meta name="robots" content="noindex">
     <title>Admin — Habin Song Photographs</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='3' y='3' width='10' height='10' fill='none' stroke='%23111'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="../styles.css?v=20260802-editor-qa">
-    <link rel="stylesheet" href="admin.css?v=20260802-editor-fix">
-    <script type="module" src="admin.js?v=20260802-editor-fix" defer></script>
+    <link rel="stylesheet" href="../styles.css?v=20260802-clear-ui">
+    <link rel="stylesheet" href="admin.css?v=20260802-compose-ui">
+    <script type="module" src="admin.js?v=20260802-compose-ui" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#composer" data-i18n="a.skip">Skip to composer</a>
@@ -36,7 +36,7 @@
     <main>
       <section class="intro admin-hero" aria-labelledby="admin-title">
         <h1 id="admin-title" data-i18n="a.hero.title">Compose a post</h1>
-        <p class="intro-copy" data-i18n="a.hero.copy">This page does not upload to a server. It creates JSON and asset files in your browser, then downloads a ZIP bundle you can copy into the repository before running the release script.</p>
+        <p class="intro-copy" data-i18n="a.hero.copy">Write the title and body, then add photographs where they belong. Your draft stays in this browser until you export a ZIP bundle.</p>
       </section>
 
       <section id="composer" class="admin-shell" aria-labelledby="composer-title">
@@ -45,7 +45,7 @@
             <h2 id="composer-title" data-i18n="a.details.title">Post details</h2>
             <div class="admin-head-tools">
               <p id="save-status" class="count" aria-live="polite" data-i18n="a.status.saved">Draft saved locally</p>
-              <button type="button" id="preview-toggle" class="preview-toggle" aria-pressed="true" data-i18n="a.preview.toggle.on">미리보기 켜짐</button>
+              <button type="button" id="preview-toggle" class="preview-toggle" aria-controls="preview-panel" aria-pressed="true" data-i18n="a.preview.toggle.on">미리보기 켜짐</button>
             </div>
           </div>
 
@@ -99,6 +99,27 @@
             </div>
           </details>
 
+          <fieldset class="editor-fieldset">
+            <legend data-i18n="a.editor.legend">Body</legend>
+            <p class="field-note" data-i18n="a.editor.note">Type directly in the canvas. Enter starts a new paragraph; insert images by drag and drop or the Photo button.</p>
+            <div class="editor-toolbar" role="toolbar" aria-label="Editing tools" data-i18n-attrs="aria-label:a.editor.toolbar.aria">
+              <div class="editor-toolbar-group">
+                <button type="button" data-ed-block="paragraph" data-i18n="a.block.paragraph">Paragraph</button>
+                <button type="button" data-ed-block="heading" data-i18n="a.block.heading">Heading</button>
+                <button type="button" data-ed-block="quote" data-i18n="a.block.quote">Quote</button>
+              </div>
+              <div class="editor-toolbar-group">
+                <button type="button" data-ed-insert="photo" data-i18n="a.block.photo">Add photo</button>
+              </div>
+              <div class="editor-toolbar-group is-secondary">
+                <button type="button" data-ed-insert="all-photos" data-i18n="a.block.add-all">Add all photos</button>
+                <button type="button" data-ed-insert="gallery" data-i18n="a.block.gallery">Gallery</button>
+                <button type="button" data-ed-insert="link-list" data-i18n="a.block.link-list">Links</button>
+              </div>
+            </div>
+            <div id="editor-canvas" class="editor-canvas" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post body" data-i18n-attrs="aria-label:a.editor.canvas.aria"></div>
+          </fieldset>
+
           <fieldset id="photo-zone">
             <legend data-i18n="a.photos.legend">Photographs</legend>
             <p class="field-note" data-i18n="a.photos.note">Select image files first. Each image can be reused as a post photo block or exported to the gallery manifest.</p>
@@ -111,30 +132,14 @@
             <div id="asset-list" class="asset-list" aria-live="polite"></div>
           </fieldset>
 
-          <fieldset class="editor-fieldset">
-            <legend data-i18n="a.editor.legend">Body</legend>
-            <p class="field-note" data-i18n="a.editor.note">Type directly in the canvas. Enter starts a new paragraph; insert images by drag and drop or the Photo button.</p>
-            <div class="editor-toolbar" role="toolbar" aria-label="Editing tools" data-i18n-attrs="aria-label:a.editor.toolbar.aria">
-              <button type="button" data-ed-block="paragraph" data-i18n="a.block.paragraph">Text</button>
-              <button type="button" data-ed-block="heading" data-i18n="a.block.heading">Heading</button>
-              <button type="button" data-ed-block="quote" data-i18n="a.block.quote">Quote</button>
-              <span class="toolbar-sep" aria-hidden="true"></span>
-              <button type="button" data-ed-insert="photo" data-i18n="a.block.photo">Photo</button>
-              <button type="button" data-ed-insert="all-photos" data-i18n="a.block.add-all">Add all photos</button>
-              <button type="button" data-ed-insert="gallery" data-i18n="a.block.gallery">Gallery</button>
-              <button type="button" data-ed-insert="link-list" data-i18n="a.block.link-list">Links</button>
-            </div>
-            <div id="editor-canvas" class="editor-canvas" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Post body" data-i18n-attrs="aria-label:a.editor.canvas.aria"></div>
-          </fieldset>
-
           <section id="export" class="export-panel" aria-labelledby="export-title">
             <div>
               <h2 id="export-title" data-i18n="a.export.title">Build content bundle</h2>
               <p class="field-note"><span data-i18n="a.export.note.before">Download the ZIP, extract it at the repository root, then run </span><code>python3 scripts/release.py</code><span data-i18n="a.export.note.after">.</span></p>
             </div>
             <div class="export-actions">
-              <button type="button" id="download-json" data-i18n="a.btn.json">Download JSON</button>
               <button type="button" id="download-zip" data-i18n="a.btn.zip">Download ZIP</button>
+              <button type="button" id="download-json" data-i18n="a.btn.json">Download JSON</button>
               <button type="button" id="import-json" data-i18n="a.btn.import">Import JSON</button>
               <button type="button" id="reset-draft" data-i18n="a.btn.reset">Reset draft</button>
             </div>
@@ -143,7 +148,7 @@
           </section>
         </form>
 
-        <aside class="preview-panel" aria-labelledby="preview-title">
+        <aside id="preview-panel" class="preview-panel" aria-labelledby="preview-title">
           <h2 id="preview-title" data-i18n="a.preview.title">Preview</h2>
           <div id="preview" class="preview-content"></div>
         </aside>

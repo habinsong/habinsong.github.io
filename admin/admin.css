@@ -1,5 +1,5 @@
 .admin-hero {
-  padding-bottom: var(--space-12);
+  padding-bottom: var(--space-8);
 }
 
 .admin-shell {
@@ -21,12 +21,15 @@
 }
 
 .admin-head {
+  align-items: center;
   margin-bottom: var(--space-6);
 }
 
 .admin-head-tools {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-3);
 }
 
@@ -123,7 +126,7 @@
   color: var(--ink);
   font: inherit;
   line-height: 1.5;
-  min-height: 40px;
+  min-height: 44px;
   padding: var(--space-3);
 }
 
@@ -156,6 +159,28 @@
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   margin-top: var(--space-3);
+}
+
+#photo-zone {
+  border-style: dashed;
+  background: var(--surface);
+}
+
+#photo-files {
+  cursor: pointer;
+}
+
+#photo-files::file-selector-button {
+  margin-right: var(--space-3);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  min-height: 28px;
+  padding: var(--space-1) var(--space-3);
 }
 
 .asset-item {
@@ -283,20 +308,24 @@
   gap: var(--space-2);
 }
 
+.editor-toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.editor-toolbar-group.is-secondary {
+  margin-left: auto;
+}
+
 .editor-toolbar {
   margin-bottom: var(--space-3);
   position: sticky;
   top: var(--space-3);
   z-index: 2;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line);
   background: var(--paper);
   padding-bottom: var(--space-3);
-}
-
-.toolbar-sep {
-  width: 1px;
-  margin: 0 var(--space-2);
-  background: var(--line);
 }
 
 .editor-toolbar button,
@@ -316,7 +345,7 @@
 }
 
 .editor-canvas {
-  min-height: 340px;
+  min-height: 440px;
   border: 1px solid var(--line);
   background: var(--paper);
   padding: var(--space-6);
@@ -501,6 +530,18 @@
   padding-top: var(--space-8);
 }
 
+#download-zip {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+#download-zip:hover,
+#download-zip:focus-visible {
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .validation-output {
   display: block;
   margin-top: var(--space-4);
@@ -515,8 +556,9 @@
   position: sticky;
   top: var(--space-6);
   align-self: start;
-  border-left: 1px solid var(--line-soft);
-  padding-left: var(--space-6);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: var(--space-6);
 }
 
 .preview-panel[hidden] {
@@ -582,13 +624,23 @@
 
   .preview-panel {
     position: static;
-    border-left: 0;
-    border-top: 1px solid var(--line-soft);
-    padding: var(--space-8) 0 0;
+    margin-top: var(--space-4);
   }
 }
 
 @media (max-width: 640px) {
+  .admin-head {
+    align-items: flex-start;
+  }
+
+  .admin-head-tools {
+    justify-content: flex-start;
+  }
+
+  .editor-toolbar-group.is-secondary {
+    margin-left: 0;
+  }
+
   .ed-gal-toolbar {
     align-items: flex-start;
     flex-direction: column;

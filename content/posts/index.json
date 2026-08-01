@@ -1,18 +1,4 @@
 {
   "version": 1,
-  "posts": [
-    {
-      "id": "초록빛",
-      "title": "초록빛",
-      "date": "2026-08-01",
-      "status": "published",
-      "excerpt": "대만, 화롄",
-      "tags": [
-        "Taiwan",
-        "iPhone"
-      ],
-      "path": "content/posts/초록빛.json",
-      "series": "대만-2026"
-    }
-  ]
+  "posts": []
 }

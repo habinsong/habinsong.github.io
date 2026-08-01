@@ -360,10 +360,16 @@ export const SITE_MESSAGES = {
     zh: "关于",
   },
   "about.copy": {
-    ko: "디지털과 필름으로 사진을 찍습니다. 문의는 이메일로 받습니다.",
-    en: "I photograph on digital and film. Inquiries by email.",
-    ja: "デジタルとフィルムで写真を撮っています。お問い合わせはメールでお願いします。",
-    zh: "我用数码与胶片拍摄。如有事宜，请发邮件联系。",
+    ko: "디지털과 필름으로 사진을 찍습니다.",
+    en: "I photograph on digital and film.",
+    ja: "デジタルとフィルムで写真を撮っています。",
+    zh: "我用数码与胶片拍摄。",
+  },
+  "about.contact.copy": {
+    ko: "문의는 이메일로 받습니다.",
+    en: "Inquiries by email.",
+    ja: "お問い合わせはメールでお願いします。",
+    zh: "如有事宜，请发邮件联系。",
   },
   "search.label": {
     ko: "검색", en: "Search", ja: "検索", zh: "搜索",
@@ -396,7 +402,7 @@ export const SITE_MESSAGES = {
     ko: "목록", en: "List", ja: "リスト", zh: "列表",
   },
   "view.gallery.contact": {
-    ko: "연락처", en: "Contact", ja: "コンタクト", zh: "索引",
+    ko: "썸네일", en: "Thumbnails", ja: "サムネイル", zh: "缩略图",
   },
   "view.menu.aria": {
     ko: "보기 방식", en: "View mode", ja: "表示方法", zh: "查看方式",
@@ -461,13 +467,6 @@ export const SITE_MESSAGES = {
     ja: "negaflow のサイト",
     zh: "negaflow 网站",
   },
-  "footer.contact": {
-    ko: "연락처",
-    en: "Contact",
-    ja: "連絡先",
-    zh: "联系",
-  },
-
   /* ── darkroom notes ─────────────────────────────────────── */
 
   "notes.title": {
@@ -555,75 +554,6 @@ export const SITE_MESSAGES = {
     ko: "갤러리로", en: "Back to the gallery", ja: "ギャラリーへ戻る", zh: "返回图库",
   },
 
-  /* ── keyboard ───────────────────────────────────────────── */
-
-  "keys.title": {
-    ko: "단축키", en: "Keyboard", ja: "ショートカット", zh: "快捷键",
-  },
-  "keys.aria": {
-    ko: "단축키 목록", en: "Keyboard shortcuts", ja: "ショートカット一覧", zh: "快捷键列表",
-  },
-  "keys.close": {
-    ko: "닫기", en: "Close", ja: "閉じる", zh: "关闭",
-  },
-  "keys.photo": {
-    ko: "사진 넘기기", en: "Move between photographs", ja: "写真を送る", zh: "切换照片",
-  },
-  "keys.escape": {
-    ko: "닫기 · 검색 지우기", en: "Close, or clear the search", ja: "閉じる・検索を消す", zh: "关闭或清除搜索",
-  },
-  "keys.search": {
-    ko: "검색창으로", en: "Jump to the search field", ja: "検索欄へ", zh: "跳到搜索框",
-  },
-  "keys.lang": {
-    ko: "언어 바꾸기", en: "Change the language", ja: "言語を切り替える", zh: "切换语言",
-  },
-  "keys.help": {
-    ko: "이 목록 열고 닫기", en: "Open and close this list", ja: "この一覧を開閉する", zh: "打开或关闭此列表",
-  },
-
-  /* ── zine ───────────────────────────────────────────────── */
-
-  "zine.open": {
-    ko: "진으로 보기", en: "Read as a zine", ja: "ジンで読む", zh: "以小册子阅读",
-  },
-  "zine.print": {
-    ko: "PDF로 저장", en: "Save as PDF", ja: "PDF で保存", zh: "存为 PDF",
-  },
-  "zine.close": {
-    ko: "닫기", en: "Close", ja: "閉じる", zh: "关闭",
-  },
-  "zine.building": {
-    ko: "엮는 중…", en: "Binding…", ja: "編集中…", zh: "装订中…",
-  },
-  "zine.failed": {
-    ko: "진을 엮지 못했습니다.",
-    en: "The zine could not be bound.",
-    ja: "ジンを作れませんでした。",
-    zh: "无法生成小册子。",
-  },
-  "zine.plate": {
-    ko: "도판 {n}", en: "Plate {n}", ja: "図版 {n}", zh: "图版 {n}",
-  },
-  "zine.colophon": {
-    ko: "판권", en: "Colophon", ja: "奥付", zh: "版权页",
-  },
-  "zine.printed": {
-    ko: "{date}에 엮음",
-    en: "Bound on {date}",
-    ja: "{date} に編集",
-    zh: "装订于 {date}",
-  },
-  "zine.plates": {
-    ko: "도판 {n}점", en: "{n} plate(s)", ja: "図版 {n} 点", zh: "{n} 幅图版",
-  },
-  "zine.hint": {
-    ko: "브라우저 인쇄 창에서 “PDF로 저장”을 고르세요.",
-    en: "Choose “Save as PDF” in the browser’s print dialog.",
-    ja: "ブラウザの印刷画面で「PDF で保存」を選んでください。",
-    zh: "请在浏览器打印窗口中选择“存储为 PDF”。",
-  },
-
   /* ── more ways to narrow the wall ───────────────────────── */
 
   "subjects.title": {
@@ -705,15 +635,6 @@ export const SITE_MESSAGES = {
     ko: "색인", en: "Index", ja: "索引", zh: "索引",
   },
 
-  /* ── reading a post ─────────────────────────────────────── */
-
-  "view.post.read": {
-    ko: "읽기", en: "Read", ja: "読む", zh: "阅读",
-  },
-  "view.post.story": {
-    ko: "이어보기", en: "Sequence", ja: "続けて見る", zh: "连续观看",
-  },
-
   /* ── monochrome ─────────────────────────────────────────── */
 
   "lb.mono.on": {
@@ -725,9 +646,6 @@ export const SITE_MESSAGES = {
 
   /* ── sharing ────────────────────────────────────────────── */
 
-  "share.title": {
-    ko: "보내기", en: "Send", ja: "送る", zh: "分享",
-  },
   "share.copy": {
     ko: "주소 복사", en: "Copy the address", ja: "アドレスをコピー", zh: "复制地址",
   },

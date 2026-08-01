@@ -1,31 +1,4 @@
 {
   "version": 1,
-  "photos": [
-    {
-      "id": "img-1453-msafei0k-q38eq7",
-      "title": "IMG_1453",
-      "medium": "digital",
-      "tone": "color",
-      "src": "photos/초록빛/img-1453-msafei0k-q38eq7.jpg",
-      "alt": "iPhone X photo",
-      "place": "Hualien Port Golf Club, Taiwan",
-      "year": "2019",
-      "details": "4mm",
-      "width": 4,
-      "height": 3,
-      "date": "2019-01-28",
-      "time": "13:04",
-      "subjects": [
-        "landscape"
-      ],
-      "exif": {
-        "camera": "Apple iPhone X",
-        "lens": "iPhone X back dual camera 4mm f/1.8",
-        "aperture": "f/1.8",
-        "shutter": "1/3400",
-        "iso": "25"
-      },
-      "postId": "초록빛"
-    }
-  ]
+  "photos": []
 }

@@ -16,7 +16,7 @@ from urllib.parse import unquote, urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
-IMAGE_SRC = "photos/초록빛/img-1453-msafei0k-q38eq7.jpg"
+IMAGE_SRC = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 2'%3E%3Crect width='3' height='2' fill='%23d8d8d8'/%3E%3C/svg%3E"
 
 
 def photo_record(index: int, post_id: str, series_index: int) -> dict[str, object]:

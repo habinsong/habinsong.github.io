@@ -30,12 +30,6 @@ function controls(slot) {
   const row = document.createElement("div");
   row.className = "share-row";
 
-  const label = document.createElement("p");
-  label.className = "share-label";
-  label.dataset.i18n = "share.title";
-  label.textContent = t("share.title");
-  row.append(label);
-
   for (const target of ELSEWHERE) {
     const link = document.createElement("a");
     link.className = "share-link";

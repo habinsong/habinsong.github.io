@@ -3,24 +3,70 @@
     padding-inline: var(--space-4);
   }
 
-  .site-header,
-  .section-head,
-  .site-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .search-input,
-  .search-input:focus {
-    width: 100%;
-  }
-
   .search-results {
     width: min(calc(100% - var(--space-8)), var(--content));
   }
 
   .site-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
     padding-inline: var(--space-4);
+  }
+
+  .site-header .wordmark {
+    grid-column: 1 / -1;
+    white-space: nowrap;
+  }
+
+  .site-header .top-nav {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    gap: var(--space-3);
+    white-space: nowrap;
+  }
+
+  .site-header #search-slot {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    width: 76px;
+  }
+
+  .site-header .search,
+  .site-header .search-input,
+  .site-header .search-input:focus {
+    width: 100%;
+  }
+
+  .section-head {
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  #posts-view {
+    margin-left: auto;
+  }
+
+  #gallery .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  #gallery .head-tools {
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  #gallery .count {
+    margin: 0;
   }
 
   .intro,
@@ -80,11 +126,6 @@
 }
 
 @media (max-width: 520px) {
-  .head-tools {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
 
   .photo-grid.is-list .photo-card {
     grid-template-columns: 1fr;
@@ -105,6 +146,50 @@
     min-width: 32px;
     min-height: 32px;
     padding-inline: var(--space-2);
+  }
+}
+
+@media (max-width: 360px) {
+  .site-header .top-nav {
+    gap: var(--space-2);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .site-header #search-slot {
+    width: 62px;
+  }
+
+  .gallery-section {
+    padding: var(--space-4);
+  }
+
+  #gallery .section-head {
+    gap: var(--space-1);
+  }
+
+  #gallery .section-head h2 {
+    font-size: 20px;
+  }
+
+  #gallery .count {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  #gallery .view-choice {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 5px 6px;
+  }
+}
+
+@media (max-width: 340px) {
+  #gallery .head-tools {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: space-between;
+    width: 100%;
   }
 }
 

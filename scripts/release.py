@@ -25,7 +25,6 @@ PUBLIC_FILES = [
     "posts.css",
     "responsive.css",
     "lightbox.css",
-    "zine.css",
     "app.js",
     "i18n.js",
     "messages.js",
@@ -36,9 +35,6 @@ PUBLIC_FILES = [
     "post-page.js",
     "view-menu.js",
     "search.js",
-    "keys.js",
-    "zine.js",
-    "story.js",
     "share.js",
     "sound.js",
     "photos.json",
@@ -698,8 +694,8 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         head.append(f'<meta property="og:image:height" content="{image_size[1]}">')
     head += head_extra
     head += [
-        '<link rel="stylesheet" href="/styles.css?v=20260802-gallery-ui">',
-        '<script type="module" src="/post-page.js" defer></script>',
+        '<link rel="stylesheet" href="/styles.css?v=20260802-clear-ui">',
+        '<script type="module" src="/post-page.js?v=20260802-clear-ui" defer></script>',
     ]
 
     body = [
@@ -734,7 +730,6 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         "</main>",
         '<footer class="site-footer">',
         f'  <p>© {datetime.now(timezone.utc).year} {escape(author_of(site))}</p>',
-        f"  <a href=\"mailto:{escape(site['email'])}\" data-i18n=\"footer.contact\">Contact</a>",
         "</footer>",
         '<dialog id="lightbox" class="lightbox" aria-label="Image viewer" data-i18n-attrs="aria-label:lb.aria">',
         '  <div class="lightbox-bar">',
@@ -800,7 +795,7 @@ def post_page(site, summary, post, titles, newer, older, siblings, cards) -> str
     main += [f"  {line}" for line in sound_slot_html(post)]
     main += [f"  {line}" for line in blocks_html(post.get("blocks", []))]
     main.append("</article>")
-    main += post_tools_html(summary, date, url)
+    main += post_tools_html(summary, url)
     main += related_html(summary, siblings, titles)
     main += post_nav_html(older, newer)
     return page(site, title=summary["title"], description=summary.get("excerpt", ""), url=url,
@@ -808,18 +803,11 @@ def post_page(site, summary, post, titles, newer, older, siblings, cards) -> str
                 kind="article", head_extra=head_extra, main=main)
 
 
-# One quiet row under the post: how to read it, how to fold it into paper, and
-# how to send it. Every control is filled in by script, so a page read without
-# any leaves an empty row rather than a broken one.
-def post_tools_html(summary: dict[str, Any], date: str, url: str) -> list[str]:
+# A quiet row of sharing links under the post. Every control is filled in by
+# script, so a page read without any leaves no broken controls behind.
+def post_tools_html(summary: dict[str, Any], url: str) -> list[str]:
     return [
         '<div class="post-tools">',
-        '  <div class="story-slot"></div>',
-        *[f"  {line}" for line in zine_slot_html("post", summary["id"], summary["title"], extra={
-            "zine-lead": summary.get("excerpt", ""),
-            "zine-date": date,
-            "zine-path": summary["path"],
-        })],
         f'  <div class="share-slot" data-share-url={quoteattr(url)} data-share-title={quoteattr(summary["title"])}></div>',
         "</div>",
     ]
@@ -897,21 +885,11 @@ def series_page(site, entry, members) -> str:
     main.append("</article>")
     main += [
         '<div class="post-tools">',
-        *[f"  {line}" for line in zine_slot_html("series", str(entry["id"]), str(entry.get("title", "")))],
         f'  <div class="share-slot" data-share-url={quoteattr(url)} data-share-title={quoteattr(str(entry.get("title", "")))}></div>',
         "</div>",
     ]
     return page(site, title=str(entry.get("title", "")), description=description, url=url,
                 image="", kind="website", head_extra=[], main=main)
-
-
-# The button is written here; zine.js finds the slot and fills it in, so a page
-# read without script simply has nothing where the button would be.
-def zine_slot_html(kind: str, zine_id: str, title: str, extra: dict[str, str] | None = None) -> list[str]:
-    attributes = {"zine": kind, "zine-id": zine_id, "zine-title": title, **(extra or {})}
-    written = " ".join(f"data-{name}={quoteattr(str(value))}" for name, value in attributes.items() if value)
-    return [f'<div class="zine-slot" {written}></div>']
-
 
 def article_ld(site, summary, url, image, series_name) -> str:
     data: dict[str, Any] = {

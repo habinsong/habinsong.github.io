@@ -300,9 +300,7 @@ blockquote {
   display: none;
 }
 
-/* ── the tools under a post ─────────────────────────────── */
-/* How to read it, how to fold it into paper, how to send it — one quiet row
-   of text controls, nothing that looks like a button bar. */
+/* ── sharing under a post ───────────────────────────────── */
 
 .post-tools {
   display: flex;
@@ -314,26 +312,12 @@ blockquote {
   padding-top: var(--space-5);
 }
 
-.post-tools .zine-slot {
-  margin-top: 0;
-}
-
 .share-row {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2) var(--space-4);
   margin-left: auto;
-}
-
-.share-label {
-  margin: 0;
-  color: var(--quiet);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 300;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
 }
 
 .share-link {
@@ -422,59 +406,6 @@ blockquote {
   max-width: 100%;
   border: 1px solid var(--line-soft);
   filter: grayscale(1);
-}
-
-/* ── reading a post as a sequence ───────────────────────── */
-/* Each block gets room and arrives as it is reached. Without the observer, or
-   with reduced motion asked for, every block is simply already here. */
-
-/* Only script ever puts "is-story" on the article, and the same script marks
-   each block as it arrives — so a page with no script running is never left
-   holding invisible text. */
-.post-article.is-story .post-body-copy,
-.post-article.is-story .post-heading,
-.post-article.is-story blockquote,
-.post-article.is-story .photo-card,
-.post-article.is-story .inline-gallery,
-.post-article.is-story .link-list {
-  margin-top: var(--space-20);
-  margin-bottom: var(--space-20);
-  opacity: 0;
-  transform: translateY(var(--space-6));
-  transition: opacity 700ms ease, transform 700ms ease;
-}
-
-.post-article.is-story .post-body-copy.is-arrived,
-.post-article.is-story .post-heading.is-arrived,
-.post-article.is-story blockquote.is-arrived,
-.post-article.is-story .photo-card.is-arrived,
-.post-article.is-story .inline-gallery.is-arrived,
-.post-article.is-story .link-list.is-arrived {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .post-article.is-story .post-body-copy,
-  .post-article.is-story .post-heading,
-  .post-article.is-story blockquote,
-  .post-article.is-story .photo-card,
-  .post-article.is-story .inline-gallery,
-  .post-article.is-story .link-list {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
-.post-article.is-story .post-body-copy,
-.post-article.is-story blockquote {
-  font-size: clamp(19px, 2.2vw, 23px);
-  line-height: 1.85;
-}
-
-.post-article.is-story .inline-gallery {
-  grid-template-columns: 1fr;
 }
 
 /* ── related ────────────────────────────────────────────── */

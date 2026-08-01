@@ -3,18 +3,13 @@
 // interface labels in the reader's language, and the lightbox.
 
 import { initI18n, registerMessages } from "./i18n.js";
-import { initKeys } from "./keys.js";
 import { openLightbox } from "./lightbox.js";
-import { SITE_MESSAGES } from "./messages.js";
-import { mountShare } from "./share.js";
+import { SITE_MESSAGES } from "./messages.js?v=20260802-clear-ui";
+import { mountShare } from "./share.js?v=20260802-clear-ui";
 import { mountSound } from "./sound.js";
-import { mountStory } from "./story.js";
-import { mountZine } from "./zine.js";
 
 registerMessages(SITE_MESSAGES);
 initI18n();
-mountZine();
-mountStory();
 mountShare();
 mountSound();
 
@@ -26,8 +21,6 @@ search?.closest("form")?.addEventListener("submit", (event) => {
   const query = search.value.trim();
   window.location.href = query === "" ? "/" : `/#q=${encodeURIComponent(query)}`;
 });
-
-initKeys({ focusSearch: () => search?.focus() });
 
 const frames = Array.from(document.querySelectorAll(".photo-card .photo-frame"));
 const items = frames.map((frame) => {

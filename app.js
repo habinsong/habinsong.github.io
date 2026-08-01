@@ -1,15 +1,12 @@
 import { currentLocale, initI18n, registerMessages, t, tCount } from "./i18n.js";
-import { initKeys } from "./keys.js";
 import { openLightbox } from "./lightbox.js";
-import { SITE_MESSAGES } from "./messages.js?v=20260801-pages";
+import { SITE_MESSAGES } from "./messages.js?v=20260802-clear-ui";
 import { loadJson, loadPhotos, loadPosts, loadSeries, normalizePostDetail } from "./site-data.js";
 import { archiveYear, collectPostPhotos, lightboxItem, photoCard, placeHref, postArticle, postCard, postHref, postNav, seriesCard } from "./site-render.js";
 import { LIGHTS, ORIENTATIONS, SEASONS, emptyState, requireElement } from "./site-utils.js";
-import { mountShare } from "./share.js";
+import { mountShare } from "./share.js?v=20260802-clear-ui";
 import { mountSound } from "./sound.js";
-import { mountStory } from "./story.js";
 import { viewMenu } from "./view-menu.js?v=20260802-gallery-ui";
-import { mountZine } from "./zine.js";
 import { loadIndex, search, searchField } from "./search.js";
 
 registerMessages(SITE_MESSAGES);
@@ -147,16 +144,6 @@ window.addEventListener("langchange", () => {
   field.relabel();
   renderAll();
   renderRoute({ keepScroll: true });
-});
-
-initKeys({
-  focusSearch: () => field.focus(),
-  onEscape: () => {
-    if (state.query !== "") {
-      field.set("");
-      runSearch("");
-    }
-  },
 });
 
 const [photos, posts, series] = await Promise.all([loadPhotos(), loadPosts(), loadSeries()]);
@@ -415,8 +402,6 @@ async function renderPostRoute(postId, options) {
       postTools(summary),
       postNav(state.posts[position + 1], state.posts[position - 1]),
     );
-    mountZine(postDetail);
-    mountStory(postDetail);
     mountShare(postDetail);
     mountSound(postDetail);
     document.title = t("doc.title.post", { title: post.title });
@@ -430,30 +415,18 @@ async function renderPostRoute(postId, options) {
   }
 }
 
-/* The same row of controls the written-out pages carry, so a post reached by
-   an old "#post=" link is no poorer than one reached by its own address. */
+/* The same sharing links the written-out pages carry, so a post reached by an
+   old "#post=" link is no poorer than one reached by its own address. */
 function postTools(summary) {
   const tools = document.createElement("div");
   tools.className = "post-tools";
-
-  const story = document.createElement("div");
-  story.className = "story-slot";
-
-  const zine = document.createElement("div");
-  zine.className = "zine-slot";
-  zine.dataset.zine = "post";
-  zine.dataset.zineId = summary.id;
-  zine.dataset.zineTitle = summary.title;
-  zine.dataset.zineLead = summary.excerpt;
-  zine.dataset.zineDate = summary.date;
-  zine.dataset.zinePath = summary.path;
 
   const share = document.createElement("div");
   share.className = "share-slot";
   share.dataset.shareUrl = new URL(postHref(summary.id), window.location.origin).href;
   share.dataset.shareTitle = summary.title;
 
-  tools.append(story, zine, share);
+  tools.append(share);
   return tools;
 }
 
