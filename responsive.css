@@ -90,6 +90,22 @@
     grid-template-columns: 1fr;
     gap: var(--space-3);
   }
+
+  .pager {
+    gap: var(--space-1);
+  }
+
+  .pager-step:first-child,
+  .pager-step:last-child {
+    margin-inline: 0;
+  }
+
+  .pager-page,
+  .pager-step {
+    min-width: 32px;
+    min-height: 32px;
+    padding-inline: var(--space-2);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

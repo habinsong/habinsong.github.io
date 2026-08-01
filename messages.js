@@ -413,17 +413,29 @@ export const SITE_MESSAGES = {
     ja: "このタグの記事はありません。",
     zh: "没有该标签的文章。",
   },
-  "gallery.more": {
-    ko: "사진 {n}장 더 보기",
-    en: "Show {n} more",
-    ja: "写真をあと {n} 枚",
-    zh: "再看 {n} 张",
-  },
-  "pager.aria": {
+  "pager.posts.aria": {
     ko: "글 목록 쪽 넘기기",
     en: "Post list pages",
     ja: "記事一覧のページ送り",
     zh: "文章列表分页",
+  },
+  "pager.series.aria": {
+    ko: "시리즈 목록 쪽 넘기기",
+    en: "Series list pages",
+    ja: "シリーズ一覧のページ送り",
+    zh: "系列列表分页",
+  },
+  "pager.gallery.aria": {
+    ko: "갤러리 쪽 넘기기",
+    en: "Gallery pages",
+    ja: "ギャラリーのページ送り",
+    zh: "图库分页",
+  },
+  "pager.archive.aria": {
+    ko: "아카이브 쪽 넘기기",
+    en: "Archive pages",
+    ja: "アーカイブのページ送り",
+    zh: "归档分页",
   },
   "pager.prev": {
     ko: "이전",

@@ -374,31 +374,10 @@ h2 {
    read, so it is cut into pages you can point at. */
 
 #posts-pager:empty,
-#gallery-more:empty {
+#series-pager:empty,
+#gallery-pager:empty,
+#archive-pager:empty {
   display: none;
-}
-
-.more-button {
-  display: block;
-  width: 100%;
-  margin-top: var(--space-10);
-  appearance: none;
-  border: 0;
-  border-top: 1px solid var(--line);
-  background: transparent;
-  color: var(--quiet);
-  cursor: pointer;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 300;
-  letter-spacing: 0.16em;
-  padding: var(--space-4) 0 0;
-  text-transform: uppercase;
-  transition: color 0.2s ease;
-}
-
-.more-button:hover {
-  color: var(--ink);
 }
 
 .pager {
@@ -414,29 +393,31 @@ h2 {
 .pager-page,
 .pager-step {
   appearance: none;
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--paper);
   color: var(--quiet);
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 300;
   letter-spacing: 0.12em;
-  min-width: 28px;
-  padding: var(--space-2) var(--space-1);
+  min-width: 36px;
+  min-height: 36px;
+  padding: var(--space-2) var(--space-3);
   text-transform: uppercase;
   transition: color 0.2s ease;
 }
 
-.pager-page:hover:not([aria-current="true"]),
+.pager-page:hover:not([aria-current="page"]),
 .pager-step:hover:not(:disabled) {
   color: var(--ink);
 }
 
-.pager-page[aria-current="true"] {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 5px;
+.pager-page[aria-current="page"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
 }
 
 .pager-step:disabled {

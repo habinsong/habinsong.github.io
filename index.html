@@ -16,8 +16,8 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='3' y='3' width='10' height='10' fill='none' stroke='%23111'/%3E%3C/svg%3E">
     <link rel="alternate" type="application/rss+xml" title="Habin Song Photographs (RSS)" href="rss.xml">
     <link rel="alternate" type="application/atom+xml" title="Habin Song Photographs (Atom)" href="feed.xml">
-    <link rel="stylesheet" href="styles.css?v=20260801-frames">
-    <script type="module" src="app.js" defer></script>
+    <link rel="stylesheet" href="styles.css?v=20260801-pages">
+    <script type="module" src="app.js?v=20260801-pages" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
@@ -69,6 +69,7 @@
           <h2 id="series-title" data-i18n="series.title">Series</h2>
         </div>
         <div id="series-list" class="series-list" role="list" aria-live="polite"></div>
+        <div id="series-pager"></div>
       </section>
 
       <section id="gallery" class="gallery-section" aria-labelledby="gallery-title">
@@ -94,7 +95,7 @@
         <div id="gallery-narrow" class="narrow-bar" aria-live="polite"></div>
 
         <div id="photo-grid" class="photo-grid" role="list" aria-live="polite"></div>
-        <div id="gallery-more"></div>
+        <div id="gallery-pager"></div>
       </section>
 
       <section id="archive" class="archive-section" aria-labelledby="archive-title">
@@ -102,6 +103,7 @@
           <h2 id="archive-title" data-i18n="archive.title">Archive</h2>
         </div>
         <div id="archive-list" class="archive-list" aria-live="polite"></div>
+        <div id="archive-pager"></div>
       </section>
 
       <section id="about" class="about" aria-labelledby="about-title">

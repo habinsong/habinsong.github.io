@@ -1,7 +1,7 @@
 import { currentLocale, initI18n, registerMessages, t, tCount } from "./i18n.js";
 import { initKeys } from "./keys.js";
 import { openLightbox } from "./lightbox.js";
-import { SITE_MESSAGES } from "./messages.js";
+import { SITE_MESSAGES } from "./messages.js?v=20260801-pages";
 import { loadJson, loadPhotos, loadPosts, loadSeries, normalizePostDetail } from "./site-data.js";
 import { archiveYear, collectPostPhotos, lightboxItem, photoCard, placeHref, postArticle, postCard, postHref, postNav, seriesCard } from "./site-render.js";
 import { LIGHTS, ORIENTATIONS, SEASONS, emptyState, requireElement } from "./site-utils.js";
@@ -17,9 +17,12 @@ initI18n();
 
 // A roll is a hundred frames and an archive keeps growing, so neither list is
 // poured onto the page whole. Posts are paged, photographs load a screenful at
-// a time — the gallery is meant to be scrolled, not clicked through.
+// a time — each section gets its own small page so the home page stays
+// readable as the archive grows.
 const POSTS_PER_PAGE = 10;
-const PHOTOS_PER_STEP = 24;
+const SERIES_PER_PAGE = 8;
+const PHOTOS_PER_PAGE = 24;
+const ARCHIVE_YEARS_PER_PAGE = 6;
 
 const state = {
   filter: "all",
@@ -28,7 +31,9 @@ const state = {
   series: [],
   detailPhotos: [],
   postsPage: 1,
-  photosShown: PHOTOS_PER_STEP,
+  seriesPage: 1,
+  galleryPage: 1,
+  archivePage: 1,
   tag: "",
   query: "",
   /* every way of narrowing the same wall of photographs; they stack */
@@ -54,6 +59,8 @@ const postsList = requireElement("#posts-list");
 const seriesList = requireElement("#series-list");
 const archiveList = requireElement("#archive-list");
 const postsPager = requireElement("#posts-pager");
+const seriesPager = requireElement("#series-pager");
+const archivePager = requireElement("#archive-pager");
 const tagBar = requireElement("#posts-tag");
 
 /* Both lists can be read more than one way, so each heading carries a visible
@@ -83,7 +90,7 @@ requireElement("#search-slot").append(field.node);
 
 requireElement("#posts-view").append(postsView.node);
 requireElement("#gallery-view").append(galleryView.node);
-const photoMore = requireElement("#gallery-more");
+const photoPager = requireElement("#gallery-pager");
 const narrowBar = requireElement("#gallery-narrow");
 const filterDetails = requireElement("#gallery-index-details");
 const indexRows = buildIndexRows(requireElement("#gallery-index"));
@@ -100,7 +107,7 @@ requireElement("#year").textContent = String(new Date().getFullYear());
 for (const button of filterButtons) {
   button.addEventListener("click", () => {
     state.filter = button.dataset.filter ?? "all";
-    state.photosShown = PHOTOS_PER_STEP;
+    state.galleryPage = 1;
     updatePressedFilter();
     renderPhotos();
     renderIndexes();
@@ -188,24 +195,14 @@ function renderPhotos() {
   photoCount.textContent = countText(visible.length, state.photos.length);
   if (visible.length === 0) {
     grid.replaceChildren(emptyState(t(isNarrowed() ? "empty.narrowed.title" : "empty.photos.title")));
-    photoMore.replaceChildren();
+    photoPager.replaceChildren();
     return;
   }
-  const shown = Math.min(state.photosShown, visible.length);
-  grid.replaceChildren(...visible.slice(0, shown).map((photo) => photoCard(photo, photoTemplate)));
-  photoMore.replaceChildren(...(shown < visible.length ? [moreButton(visible.length - shown)] : []));
-}
-
-function moreButton(remaining) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "more-button";
-  button.textContent = t("gallery.more", { n: remaining });
-  button.addEventListener("click", () => {
-    state.photosShown += PHOTOS_PER_STEP;
-    renderPhotos();
-  });
-  return button;
+  const pages = Math.max(1, Math.ceil(visible.length / PHOTOS_PER_PAGE));
+  state.galleryPage = Math.min(Math.max(state.galleryPage, 1), pages);
+  const start = (state.galleryPage - 1) * PHOTOS_PER_PAGE;
+  grid.replaceChildren(...visible.slice(start, start + PHOTOS_PER_PAGE).map((photo) => photoCard(photo, photoTemplate)));
+  photoPager.replaceChildren(...(pages > 1 ? [pager(pages, state.galleryPage, goToGalleryPage, "pager.gallery.aria")] : []));
 }
 
 function taggedPosts() {
@@ -235,7 +232,7 @@ function renderPosts() {
   const start = (state.postsPage - 1) * POSTS_PER_PAGE;
   const page = posts.slice(start, start + POSTS_PER_PAGE);
   postsList.replaceChildren(...page.map((post, index) => postCard(post, postTemplate, seriesTitleOf(post.series), start + index + 1)));
-  postsPager.replaceChildren(...(pages > 1 ? [pager(pages)] : []));
+  postsPager.replaceChildren(...(pages > 1 ? [pager(pages, state.postsPage, goToPostsPage, "pager.posts.aria")] : []));
 }
 
 function activeTagChip() {
@@ -247,35 +244,37 @@ function activeTagChip() {
   return button;
 }
 
-function pager(pages) {
+function pager(pages, current, onChange, ariaKey) {
   const nav = document.createElement("nav");
   nav.className = "pager";
-  nav.setAttribute("aria-label", t("pager.aria"));
-  nav.append(pagerStep(-1, "pager.prev", state.postsPage > 1));
+  nav.setAttribute("aria-label", t(ariaKey));
+  nav.append(pagerStep(-1, "pager.prev", current > 1, current, onChange));
   for (let page = 1; page <= pages; page += 1) {
-    nav.append(pagerNumber(page));
+    nav.append(pagerNumber(page, current, onChange));
   }
-  nav.append(pagerStep(1, "pager.next", state.postsPage < pages));
+  nav.append(pagerStep(1, "pager.next", current < pages, current, onChange));
   return nav;
 }
 
-function pagerNumber(page) {
+function pagerNumber(page, current, onChange) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "pager-page";
   button.textContent = String(page);
-  button.setAttribute("aria-current", String(page === state.postsPage));
-  button.addEventListener("click", () => goToPostsPage(page));
+  if (page === current) {
+    button.setAttribute("aria-current", "page");
+  }
+  button.addEventListener("click", () => onChange(page));
   return button;
 }
 
-function pagerStep(delta, labelKey, enabled) {
+function pagerStep(delta, labelKey, enabled, current, onChange) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "pager-step";
   button.textContent = t(labelKey);
   button.disabled = !enabled;
-  button.addEventListener("click", () => goToPostsPage(state.postsPage + delta));
+  button.addEventListener("click", () => onChange(current + delta));
   return button;
 }
 
@@ -285,26 +284,54 @@ function goToPostsPage(page) {
   requireElement("#posts").scrollIntoView({ block: "start" });
 }
 
+function goToSeriesPage(page) {
+  state.seriesPage = page;
+  renderSeries();
+  requireElement("#series").scrollIntoView({ block: "start" });
+}
+
+function goToGalleryPage(page) {
+  state.galleryPage = page;
+  renderPhotos();
+  requireElement("#gallery").scrollIntoView({ block: "start" });
+}
+
+function goToArchivePage(page) {
+  state.archivePage = page;
+  renderArchive();
+  requireElement("#archive").scrollIntoView({ block: "start" });
+}
+
 function renderSeries() {
   if (state.series.length === 0) {
     seriesList.replaceChildren(emptyState(t("empty.series.title")));
+    seriesPager.replaceChildren();
     return;
   }
-  seriesList.replaceChildren(...state.series.map((entry) => seriesCard(entry, postsInSeries(entry.id).length)));
+  const pages = Math.max(1, Math.ceil(state.series.length / SERIES_PER_PAGE));
+  state.seriesPage = Math.min(Math.max(state.seriesPage, 1), pages);
+  const start = (state.seriesPage - 1) * SERIES_PER_PAGE;
+  seriesList.replaceChildren(...state.series.slice(start, start + SERIES_PER_PAGE).map((entry) => seriesCard(entry, postsInSeries(entry.id).length)));
+  seriesPager.replaceChildren(...(pages > 1 ? [pager(pages, state.seriesPage, goToSeriesPage, "pager.series.aria")] : []));
 }
 
 function renderArchive() {
   const years = archiveYears();
   if (years.length === 0) {
     archiveList.replaceChildren(emptyState(t("empty.archive.title")));
+    archivePager.replaceChildren();
     return;
   }
-  archiveList.replaceChildren(...years.map((year) => archiveYear(
+  const pages = Math.max(1, Math.ceil(years.length / ARCHIVE_YEARS_PER_PAGE));
+  state.archivePage = Math.min(Math.max(state.archivePage, 1), pages);
+  const start = (state.archivePage - 1) * ARCHIVE_YEARS_PER_PAGE;
+  archiveList.replaceChildren(...years.slice(start, start + ARCHIVE_YEARS_PER_PAGE).map((year) => archiveYear(
     year,
     state.posts.filter((post) => yearOf(post.date) === year),
     state.photos.filter((photo) => photo.year === year).length,
     seriesTitleOf,
   )));
+  archivePager.replaceChildren(...(pages > 1 ? [pager(pages, state.archivePage, goToArchivePage, "pager.archive.aria")] : []));
 }
 
 function archiveYears() {
@@ -563,8 +590,8 @@ function applyTagFromHash() {
   }
 }
 
-/* someone opened a link to one photograph: show enough of the gallery to
-   reach it, then put it on screen */
+/* someone opened a link to one photograph: move to its gallery page, then put
+   it on screen */
 function openPhotoFromHash() {
   const wanted = hashParam("photo");
   if (wanted === "") {
@@ -575,8 +602,9 @@ function openPhotoFromHash() {
   if (position < 0) {
     return;
   }
-  if (position >= state.photosShown) {
-    state.photosShown = Math.ceil((position + 1) / PHOTOS_PER_STEP) * PHOTOS_PER_STEP;
+  const page = Math.floor(position / PHOTOS_PER_PAGE) + 1;
+  if (state.galleryPage !== page) {
+    state.galleryPage = page;
     renderPhotos();
   }
   openLightbox(visible.map(lightboxItem), position);
@@ -697,7 +725,7 @@ function isNarrowed() {
 
 function narrow(key, value) {
   state.narrow[key] = narrowed(key) === value ? "" : value;
-  state.photosShown = PHOTOS_PER_STEP;
+  state.galleryPage = 1;
   syncGalleryHash();
   renderPhotos();
   renderIndexes();
@@ -705,7 +733,7 @@ function narrow(key, value) {
 
 function clearNarrowing() {
   state.narrow = {};
-  state.photosShown = PHOTOS_PER_STEP;
+  state.galleryPage = 1;
   syncGalleryHash();
   renderPhotos();
   renderIndexes();
@@ -779,6 +807,6 @@ function applyGalleryFromHash() {
     return false;
   }
   state.narrow = wanted;
-  state.photosShown = PHOTOS_PER_STEP;
+  state.galleryPage = 1;
   return true;
 }
