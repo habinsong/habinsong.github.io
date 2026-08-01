@@ -366,19 +366,19 @@ export const SITE_MESSAGES = {
     ko: "아카이브로", en: "Back to archive", ja: "アーカイブへ", zh: "返回归档",
   },
   "view.posts.cards": {
-    ko: "카드로 보기", en: "Cards", ja: "カード表示", zh: "卡片视图",
+    ko: "카드", en: "Cards", ja: "カード", zh: "卡片",
   },
   "view.posts.list": {
-    ko: "목록으로 보기", en: "List", ja: "リスト表示", zh: "列表视图",
+    ko: "목록", en: "List", ja: "リスト", zh: "列表",
   },
   "view.gallery.grid": {
-    ko: "기본 격자", en: "Grid", ja: "標準グリッド", zh: "默认网格",
+    ko: "격자", en: "Grid", ja: "グリッド", zh: "网格",
   },
   "view.gallery.large": {
-    ko: "크게 보기", en: "Large", ja: "大きく表示", zh: "大图",
+    ko: "크게", en: "Large", ja: "大きく", zh: "大图",
   },
   "view.gallery.dense": {
-    ko: "빽빽하게 보기", en: "Dense", ja: "密に表示", zh: "紧凑",
+    ko: "빽빽하게", en: "Dense", ja: "密に", zh: "紧凑",
   },
   "tag.clear": {
     ko: "태그 “{tag}” · 글 {n}편 · 지우기",

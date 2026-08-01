@@ -472,11 +472,21 @@ def post_page(site, summary, post, titles, newer, older, siblings) -> str:
         head_extra.append(f'<meta property="article:published_time" content="{escape(date)}">')
     head_extra += ['<script type="application/ld+json">', article_ld(site, summary, url, image, series_name), "</script>"]
 
-    meta_line = " · ".join(part for part in [date, series_name] if part)
+    meta = []
+    if date:
+        meta.append(f"<span>{escape(date)}</span>")
+    if series_name:
+        meta.append(
+            f'<a class="post-series" href="/series/{quote(summary["series"])}/">{escape(series_name)}</a>'
+        )
+    for tag in summary.get("tags", []):
+        meta.append(f'<a class="tag" href="/#tag={quote(str(tag))}">{escape(str(tag))}</a>')
+    meta_line = ' <span class="meta-dot">·</span> '.join(meta)
+
     main = [
         '<article class="post-article">',
         '  <a class="back-link" href="/#posts" data-i18n="post.back">Back to posts</a>',
-        f'  <p class="post-meta">{escape(meta_line)}</p>',
+        f'  <p class="post-meta">{meta_line}</p>',
         f"  <h1>{escape(summary['title'])}</h1>",
         f'  <p class="post-lead">{escape(summary.get("excerpt", ""))}</p>',
     ]

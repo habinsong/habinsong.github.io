@@ -104,6 +104,7 @@ state.photos = photos;
 state.posts = posts;
 state.series = series;
 renderAll();
+applyTagFromHash();
 await renderRoute({ keepScroll: true });
 openPhotoFromHash();
 
@@ -147,9 +148,6 @@ function moreButton(remaining) {
   button.addEventListener("click", () => {
     state.photosShown += PHOTOS_PER_STEP;
     renderPhotos();
-    /* the first picture of the batch that just arrived, so the eye lands there
-       instead of at the top of the gallery */
-    grid.children[state.photosShown - PHOTOS_PER_STEP]?.scrollIntoView({ block: "center" });
   });
   return button;
 }
@@ -158,11 +156,13 @@ function taggedPosts() {
   return state.tag === "" ? state.posts : state.posts.filter((post) => post.tags.includes(state.tag));
 }
 
-function pickTag(tag) {
+function pickTag(tag, options = {}) {
   state.tag = state.tag === tag ? "" : tag;
   state.postsPage = 1;
   renderPosts();
-  requireElement("#posts").scrollIntoView({ block: "start" });
+  if (options.quiet !== true) {
+    requireElement("#posts").scrollIntoView({ block: "start" });
+  }
 }
 
 function renderPosts() {
@@ -376,6 +376,14 @@ function renderSeriesRoute(seriesId, options) {
   document.title = t("doc.title.post", { title: entry.title });
   if (options.keepScroll !== true) {
     seriesDetail.scrollIntoView({ block: "start" });
+  }
+}
+
+/* a link that carries a tag opens the list already narrowed to it */
+function applyTagFromHash() {
+  const wanted = hashParam("tag");
+  if (wanted !== "" && state.posts.some((post) => post.tags.includes(wanted))) {
+    pickTag(wanted, { quiet: true });
   }
 }
 
