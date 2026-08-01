@@ -67,6 +67,7 @@ export function photoCard(photo, template, options = {}) {
   if (!(card instanceof HTMLElement) || !(frame instanceof HTMLButtonElement) || !(image instanceof HTMLImageElement) || caption === null || meta === null) {
     throw new Error("Photo template is incomplete");
   }
+  card.setAttribute("role", "listitem");
 
   card.dataset.medium = photo.medium;
   card.dataset.tone = photo.tone;
@@ -163,6 +164,7 @@ function separator() {
 export function seriesCard(series, postCount) {
   const card = document.createElement("article");
   card.className = "series-card";
+  card.setAttribute("role", "listitem");
   const title = document.createElement("h3");
   const link = document.createElement("a");
   link.href = seriesHref(series.id);

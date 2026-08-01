@@ -550,7 +550,7 @@ def place_page(site, place, members) -> str:
         '<div class="place-page">',
         '  <a class="back-link" href="/#gallery" data-i18n="places.back">Back to the gallery</a>',
         f"  <h1>{escape(place)}</h1>",
-        '  <div class="photo-grid">',
+        '  <div class="photo-grid" role="list">',
     ]
     for photo in members:
         main += [f"    {line}" for line in figure_html(photo, "")]

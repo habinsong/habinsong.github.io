@@ -75,7 +75,17 @@
 
 .series-section,
 .archive-section {
-  margin-bottom: var(--space-20);
+  margin-bottom: var(--space-12);
+  border: 1px solid var(--line);
+  padding: var(--space-8);
+  background: var(--paper);
+}
+
+.gallery-section {
+  margin-bottom: var(--space-12);
+  border: 1px solid var(--line);
+  padding: var(--space-8);
+  background: var(--paper);
 }
 
 .intro {
@@ -125,6 +135,8 @@ h2 {
   justify-content: space-between;
   gap: var(--space-8);
   margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: var(--space-4);
 }
 
 .count {
@@ -146,8 +158,8 @@ h2 {
 .series-list {
   display: grid;
   grid-template-columns: 1fr;
-  max-width: 760px;
-  gap: 0;
+  width: 100%;
+  gap: var(--space-3);
 }
 
 .series-card {
@@ -155,8 +167,9 @@ h2 {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--space-2) var(--space-6);
-  border-top: 1px solid var(--line);
-  padding: var(--space-4) 0;
+  border: 1px solid var(--line);
+  padding: var(--space-5);
+  background: var(--paper);
 }
 
 .series-card h3 {
@@ -187,14 +200,16 @@ h2 {
 
 .archive-list {
   display: grid;
+  gap: var(--space-3);
 }
 
 .archive-year {
   display: grid;
   grid-template-columns: 140px minmax(0, 1fr);
   gap: var(--space-6);
-  border-top: 1px solid var(--line-soft);
-  padding: var(--space-6) 0;
+  border: 1px solid var(--line);
+  padding: var(--space-5);
+  background: var(--paper);
 }
 
 .archive-year h3 {
@@ -226,6 +241,13 @@ h2 {
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2) var(--space-4);
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--space-2);
+}
+
+.archive-posts li:first-child {
+  border-top: 0;
+  padding-top: 0;
 }
 
 .archive-posts a {

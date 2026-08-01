@@ -5,6 +5,13 @@
   margin: 0 auto var(--space-20);
 }
 
+.posts-section {
+  margin-bottom: var(--space-12);
+  border: 1px solid var(--line);
+  padding: var(--space-8);
+  background: var(--paper);
+}
+
 .posts-list {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -13,8 +20,9 @@
 
 .post-card {
   grid-column: span 6;
-  border-top: 1px solid var(--line);
-  padding-top: var(--space-4);
+  border: 1px solid var(--line);
+  padding: var(--space-5);
+  background: var(--paper);
 }
 
 .post-number {
@@ -61,8 +69,9 @@ blockquote {
 }
 
 .post-article {
-  border-top: 1px solid var(--line);
-  padding-top: var(--space-8);
+  border: 1px solid var(--line);
+  padding: var(--space-8);
+  background: var(--paper);
 }
 
 .post-article h1,
@@ -255,7 +264,8 @@ blockquote {
 /* Date and title on one line, no summary. Twenty entries at a glance. */
 
 .posts-list.is-list {
-  display: block;
+  display: grid;
+  gap: var(--space-3);
 }
 
 .posts-list.is-list .post-card {
@@ -263,12 +273,9 @@ blockquote {
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2) var(--space-6);
-  border-top: 1px solid var(--line-soft);
-  padding: var(--space-3) 0;
-}
-
-.posts-list.is-list .post-card:first-child {
-  border-top-color: var(--line);
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  padding: var(--space-4) var(--space-5);
 }
 
 .posts-list.is-list .post-number {

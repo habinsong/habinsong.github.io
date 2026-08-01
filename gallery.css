@@ -35,6 +35,9 @@
 
 .photo-card {
   margin: 0;
+  border: 1px solid var(--line);
+  padding: var(--space-3);
+  background: var(--paper);
 }
 
 .photo-frame {
@@ -42,7 +45,7 @@
   place-items: center;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border: 0;
+  border: 1px solid var(--line-soft);
   padding: 0;
   background: var(--surface);
   color: inherit;
@@ -320,7 +323,7 @@ figcaption {
    across a body of work rather than at any picture in it */
 .photo-grid.is-list {
   grid-template-columns: 1fr;
-  gap: 0;
+  gap: var(--space-3);
 }
 
 .photo-grid.is-list .photo-card {
@@ -328,12 +331,8 @@ figcaption {
   grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
   align-items: center;
   gap: var(--space-6);
-  border-top: 1px solid var(--line-soft);
-  padding: var(--space-4) 0;
-}
-
-.photo-grid.is-list .photo-card:first-child {
-  border-top-color: var(--line);
+  border: 1px solid var(--line);
+  padding: var(--space-3);
 }
 
 .photo-grid.is-list figcaption {

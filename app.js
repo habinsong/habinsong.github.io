@@ -536,6 +536,7 @@ function searchResults(query, found) {
   if (found.photos.length > 0) {
     const strip = document.createElement("div");
     strip.className = "photo-grid is-contact";
+    strip.setAttribute("role", "list");
     strip.append(...found.photos.map((photo) => photoCard(photo, photoTemplate)));
     strip.addEventListener("photo:open", (event) => {
       const start = found.photos.findIndex((photo) => photo.id === event.detail.id);

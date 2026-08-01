@@ -44,6 +44,13 @@
     padding: var(--space-12) 0 var(--space-10);
   }
 
+  .posts-section,
+  .gallery-section,
+  .series-section,
+  .archive-section {
+    padding: var(--space-5);
+  }
+
   .post-card {
     grid-column: 1 / -1;
   }
