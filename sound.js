@@ -25,51 +25,73 @@ export function mountSound(root = document) {
   }
 }
 
+/* The whole line is the control: a mark, then the name of the thing. No word
+   for "play" and no word for "sound track" — the triangle says the first and
+   the line it sits on says the second. */
 function player(slot, video) {
   const wrap = document.createElement("div");
   wrap.className = "sound";
 
-  const line = document.createElement("p");
-  line.className = "sound-line";
-
-  const label = document.createElement("span");
-  label.className = "sound-name";
-  label.textContent = `${t("sound.label")}: ${text(slot.dataset.soundLabel, video)}`;
-
   const control = document.createElement("button");
   control.type = "button";
-  control.className = "sound-button";
-  control.textContent = `▶ ${t("sound.play")}`;
+  control.className = "sound-toggle";
 
-  const notice = document.createElement("span");
-  notice.className = "sound-notice";
-  notice.dataset.i18n = "sound.notice";
-  notice.textContent = t("sound.notice");
+  const glyph = mark();
+  const title = document.createElement("span");
+  title.className = "sound-title";
+  title.textContent = text(slot.dataset.soundLabel, video);
 
   const stage = document.createElement("div");
   stage.className = "sound-stage";
 
+  const playing = () => stage.firstChild !== null;
+  const relabel = () => {
+    control.setAttribute("aria-label", `${t(playing() ? "sound.stop" : "sound.play")}: ${title.textContent}`);
+  };
+
   control.addEventListener("click", () => {
-    if (stage.firstChild === null) {
-      stage.append(frame(video));
-      control.textContent = `■ ${t("sound.stop")}`;
-      notice.hidden = true;
-    } else {
+    if (playing()) {
       stage.replaceChildren();
-      control.textContent = `▶ ${t("sound.play")}`;
-      notice.hidden = false;
+    } else {
+      stage.append(frame(video));
     }
+    wrap.classList.toggle("is-playing", playing());
+    glyph.replaceChildren(shape(playing()));
+    relabel();
   });
 
-  window.addEventListener("langchange", () => {
-    label.textContent = `${t("sound.label")}: ${text(slot.dataset.soundLabel, video)}`;
-    const playing = stage.firstChild !== null;
-    control.textContent = playing ? `■ ${t("sound.stop")}` : `▶ ${t("sound.play")}`;
-  });
+  window.addEventListener("langchange", relabel);
 
-  line.append(control, label, notice);
-  wrap.append(line, stage);
+  control.append(glyph, title);
+  wrap.append(control, stage);
+  relabel();
   return wrap;
+}
+
+function mark() {
+  const glyph = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  glyph.setAttribute("class", "sound-glyph");
+  glyph.setAttribute("viewBox", "0 0 10 10");
+  /* an svg with no size of its own fills whatever it is given, so it is given
+     one here as well as in the stylesheet */
+  glyph.setAttribute("width", "8");
+  glyph.setAttribute("height", "8");
+  glyph.setAttribute("aria-hidden", "true");
+  glyph.append(shape(false));
+  return glyph;
+}
+
+function shape(stopping) {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", stopping ? "rect" : "path");
+  if (stopping) {
+    node.setAttribute("x", "1");
+    node.setAttribute("y", "1");
+    node.setAttribute("width", "8");
+    node.setAttribute("height", "8");
+  } else {
+    node.setAttribute("d", "M1 0.5 L9.5 5 L1 9.5 Z");
+  }
+  return node;
 }
 
 function frame(video) {

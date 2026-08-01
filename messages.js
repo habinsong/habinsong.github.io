@@ -719,9 +719,6 @@ export const SITE_MESSAGES = {
 
   /* ── soundtrack ─────────────────────────────────────────── */
 
-  "sound.label": {
-    ko: "사운드트랙", en: "Sound track", ja: "サウンドトラック", zh: "配乐",
-  },
   "sound.play": {
     ko: "재생", en: "Play", ja: "再生", zh: "播放",
   },
@@ -730,11 +727,5 @@ export const SITE_MESSAGES = {
   },
   "sound.frame": {
     ko: "사운드트랙 재생기", en: "Sound track player", ja: "サウンドトラック再生", zh: "配乐播放器",
-  },
-  "sound.notice": {
-    ko: "누르면 유튜브에서 불러옵니다.",
-    en: "Pressing play loads it from YouTube.",
-    ja: "再生を押すと YouTube から読み込みます。",
-    zh: "按下播放后将从 YouTube 载入。",
   },
 };

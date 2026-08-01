@@ -74,6 +74,15 @@ body.is-zine > *:not(.zine) {
   padding-top: var(--space-16);
 }
 
+/* on screen the sheets run together, so a title page and the colophon are
+   given the air the page break gives them on paper */
+.zine-chapter,
+.zine-colophon {
+  border-top: 1px solid var(--line-soft);
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+}
+
 .zine-author {
   margin: 0 0 var(--space-12);
   color: var(--quiet);
@@ -214,7 +223,7 @@ body.is-zine > *:not(.zine) {
   }
 
   body.is-zine .zine-page {
-    border-bottom: 0;
+    border: 0;
     break-inside: avoid;
     margin: 0;
     padding: 0;
