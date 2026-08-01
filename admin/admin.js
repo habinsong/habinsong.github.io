@@ -1,6 +1,6 @@
 import { currentLocale, initI18n, registerMessages, t } from "../i18n.js";
 import { SITE_MESSAGES } from "../messages.js";
-import { ADMIN_MESSAGES } from "./admin-messages.js";
+import { ADMIN_MESSAGES } from "./admin-messages.js?v=20260802-admin-qa";
 import { clearPersistedAssets, loadPersistedAssets, persistAsset, removePersistedAsset } from "./asset-store.js";
 import { buildPost, newAsset, normalizeSavedBlock, restoredAsset } from "./admin-model.js";
 import { downloadJsonFile, downloadZipFile } from "./admin-export.js";
@@ -18,7 +18,7 @@ import {
 } from "./editor.js";
 import { readImageInfo } from "./exif.js";
 import { toWebp } from "./webp.js";
-import { renderAssets } from "./admin-render.js";
+import { renderAssets } from "./admin-render.js?v=20260802-admin-qa";
 import { renderPreview } from "./admin-preview.js";
 import { gcd, isRecord, requireElement, setFormValue, today, uniqueId } from "./admin-utils.js";
 
@@ -36,6 +36,8 @@ const photoFiles = requireElement("#photo-files");
 const photoZone = requireElement("#photo-zone");
 const seriesDatalist = requireElement("#series-list");
 const assetList = requireElement("#asset-list");
+const assetCount = requireElement("#asset-count");
+const assetDetailsToggle = requireElement("#asset-details-toggle");
 const canvas = requireElement("#editor-canvas");
 const preview = requireElement("#preview");
 const previewPanel = preview.closest(".preview-panel");
@@ -125,6 +127,17 @@ photoZone.addEventListener("drop", (event) => {
   event.preventDefault();
   photoZone.classList.remove("is-dragover");
   addAssets(Array.from(event.dataTransfer?.files ?? []));
+});
+
+assetDetailsToggle.addEventListener("click", () => {
+  const details = Array.from(assetList.querySelectorAll(".asset-details"));
+  const shouldOpen = details.some((item) => !item.open);
+  details.forEach((item) => { item.open = shouldOpen; });
+  updateAssetListControls();
+});
+
+assetList.addEventListener("click", () => {
+  window.setTimeout(updateAssetListControls, 0);
 });
 
 form.addEventListener("click", async (event) => {
@@ -425,6 +438,16 @@ function renderAssetsPanel() {
     refreshAssets();
     editorChanged();
   });
+  updateAssetListControls();
+}
+
+function updateAssetListControls() {
+  const count = state.assets.length;
+  assetCount.textContent = count === 0 ? "" : t("a.assets.count", { n: count });
+  assetDetailsToggle.hidden = count === 0;
+  const details = Array.from(assetList.querySelectorAll(".asset-details"));
+  const shouldExpand = details.some((item) => !item.open);
+  assetDetailsToggle.textContent = t(shouldExpand ? "a.assets.expand" : "a.assets.collapse");
 }
 
 function renderCurrentPreview() {

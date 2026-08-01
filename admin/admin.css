@@ -75,6 +75,8 @@
 
 .admin-form fieldset {
   border: 1px solid var(--line-soft);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   padding: var(--space-5);
 }
 
@@ -151,12 +153,14 @@
 
 .asset-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
 }
 
 .asset-item {
   border-top: 1px solid var(--line);
+  min-width: 0;
   padding-top: var(--space-4);
 }
 
@@ -193,6 +197,29 @@
   font-size: 13px;
 }
 
+.asset-list-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.asset-list-tools .count {
+  margin: 0;
+}
+
+.asset-details-toggle {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: var(--space-2) var(--space-3);
+}
+
 .asset-title {
   margin: 0;
   font-family: var(--font-sans);
@@ -200,6 +227,42 @@
   font-weight: 300;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.asset-details {
+  border: 1px solid var(--line-soft);
+}
+
+.asset-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  cursor: pointer;
+  padding: var(--space-3);
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  list-style-position: inside;
+  text-transform: uppercase;
+}
+
+.asset-details[open] > summary {
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink);
+}
+
+.asset-details > .asset-fields,
+.asset-details > .asset-advanced {
+  margin: var(--space-4);
+}
+
+.asset-alt-status {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .asset-fields {
@@ -490,6 +553,15 @@
 }
 
 @media (max-width: 640px) {
+  .asset-list-tools {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .asset-details-toggle {
+    width: 100%;
+  }
+
   .field-grid,
   .asset-fields,
   .block-fields {

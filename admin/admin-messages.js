@@ -155,6 +155,36 @@ export const ADMIN_MESSAGES = {
     ja: "画像ファイルが選択されていません。",
     zh: "未选择图片文件。",
   },
+  "a.assets.count": {
+    ko: "사진 {n}장 · 카드를 열어 정보를 편집하세요.",
+    en: "{n} photos · Open a card to edit its details.",
+    ja: "写真 {n}枚 · カードを開いて情報を編集します。",
+    zh: "{n} 张照片 · 打开卡片编辑信息。",
+  },
+  "a.assets.collapse": {
+    ko: "사진 정보 모두 접기",
+    en: "Collapse all photo details",
+    ja: "写真情報をすべて折りたたむ",
+    zh: "收起所有照片信息",
+  },
+  "a.assets.expand": {
+    ko: "사진 정보 모두 펼치기",
+    en: "Expand all photo details",
+    ja: "写真情報をすべて展開",
+    zh: "展开所有照片信息",
+  },
+  "a.asset.edit": {
+    ko: "사진 정보",
+    en: "Photo details",
+    ja: "写真情報",
+    zh: "照片信息",
+  },
+  "a.asset.alt.missing": {
+    ko: "대체 텍스트 필요",
+    en: "Alt text needed",
+    ja: "代替テキストが必要",
+    zh: "需要替代文本",
+  },
   "a.editor.legend": {
     ko: "본문",
     en: "Body",

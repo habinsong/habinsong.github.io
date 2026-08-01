@@ -6,10 +6,10 @@ export function renderAssets(assetList, state, onChange) {
     assetList.replaceChildren(emptyNote(t("a.assets.empty")));
     return;
   }
-  assetList.replaceChildren(...state.assets.map((asset) => assetEditor(asset, onChange)));
+  assetList.replaceChildren(...state.assets.map((asset, index) => assetEditor(asset, onChange, index)));
 }
 
-function assetEditor(asset, onChange) {
+function assetEditor(asset, onChange, index) {
   const item = document.createElement("section");
   item.className = "asset-item";
   const header = document.createElement("header");
@@ -36,19 +36,40 @@ function assetEditor(asset, onChange) {
   actions.append(insert, remove);
   header.append(heading, actions);
   const allFields = assetFields(asset, () => onChange(asset));
+  const details = document.createElement("details");
+  details.className = "asset-details";
+  details.open = index === 0;
+  const detailsSummary = document.createElement("summary");
+  detailsSummary.className = "asset-details-summary";
+  const detailsLabel = document.createElement("span");
+  detailsLabel.textContent = t("a.asset.edit");
+  detailsSummary.append(detailsLabel);
+  let altStatus = null;
+  if (asset.alt.trim().length === 0) {
+    altStatus = document.createElement("span");
+    altStatus.className = "asset-alt-status";
+    altStatus.textContent = t("a.asset.alt.missing");
+    detailsSummary.append(altStatus);
+  }
   const fields = document.createElement("div");
   fields.className = "asset-fields";
   fields.append(...allFields.slice(0, 11));
+  const altInput = allFields[allFields.length - 1]?.querySelector("input");
+  altInput?.addEventListener("input", () => {
+    if (altStatus !== null) {
+      altStatus.hidden = altInput.value.trim().length > 0;
+    }
+  });
   const advanced = document.createElement("details");
   advanced.className = "asset-advanced";
-  advanced.open = asset.alt.trim().length === 0;
   const summary = document.createElement("summary");
   summary.textContent = t("a.asset.advanced");
   const advancedFields = document.createElement("div");
   advancedFields.className = "asset-fields";
   advancedFields.append(...allFields.slice(11));
   advanced.append(summary, advancedFields);
-  item.append(header, fields, advanced);
+  details.append(detailsSummary, fields, advanced);
+  item.append(header, details);
   return item;
 }
 

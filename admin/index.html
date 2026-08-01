@@ -9,9 +9,9 @@
     <meta name="robots" content="noindex">
     <title>Admin — Habin Song Photographs</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Crect x='3' y='3' width='10' height='10' fill='none' stroke='%23111'/%3E%3C/svg%3E">
-    <link rel="stylesheet" href="../styles.css">
-    <link rel="stylesheet" href="admin.css">
-    <script type="module" src="admin.js" defer></script>
+    <link rel="stylesheet" href="../styles.css?v=20260802-admin-qa">
+    <link rel="stylesheet" href="admin.css?v=20260802-admin-qa">
+    <script type="module" src="admin.js?v=20260802-admin-qa" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#composer" data-i18n="a.skip">Skip to composer</a>
@@ -104,6 +104,10 @@
             <p class="field-note" data-i18n="a.photos.note">Select image files first. Each image can be reused as a post photo block or exported to the gallery manifest.</p>
             <input id="photo-files" type="file" accept="image/*" multiple>
             <p class="field-note drop-note" data-i18n="a.photos.drop">You can also drag and drop images here.</p>
+            <div class="asset-list-tools">
+              <p id="asset-count" class="count" aria-live="polite"></p>
+              <button type="button" id="asset-details-toggle" class="asset-details-toggle" hidden></button>
+            </div>
             <div id="asset-list" class="asset-list" aria-live="polite"></div>
           </fieldset>
 
