@@ -698,7 +698,7 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         head.append(f'<meta property="og:image:height" content="{image_size[1]}">')
     head += head_extra
     head += [
-        '<link rel="stylesheet" href="/styles.css?v=20260801-pages">',
+        '<link rel="stylesheet" href="/styles.css?v=20260802-gallery-ui">',
         '<script type="module" src="/post-page.js" defer></script>',
     ]
 

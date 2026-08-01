@@ -4,9 +4,10 @@
 
 import { t } from "./i18n.js";
 
-export function viewMenu({ storageKey, options, onPick }) {
+export function viewMenu({ storageKey, options, defaultId = "", onPick }) {
   const saved = read(storageKey);
-  let current = options.some((option) => option.id === saved) ? saved : options[0].id;
+  const fallback = options.find((option) => option.id === defaultId)?.id ?? options[0].id;
+  let current = options.some((option) => option.id === saved) ? saved : fallback;
 
   const wrap = document.createElement("div");
   wrap.className = "view-menu";

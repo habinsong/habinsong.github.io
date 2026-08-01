@@ -119,6 +119,9 @@ export function removeAssetIslands(assetId) {
   for (const box of canvas.querySelectorAll(`.ed-gal-item input[data-asset-id="${assetId}"]`)) {
     box.closest(".ed-gal-item")?.remove();
   }
+  for (const island of canvas.querySelectorAll('[data-block="gallery"]')) {
+    updateGalleryCount(island);
+  }
   ensureTextBlock();
   notifyChange();
 }
@@ -301,12 +304,40 @@ function galleryIsland(block) {
     return island;
   }
   island.append(islandHead(t("a.gallery.pick")));
+  const tools = document.createElement("div");
+  tools.className = "ed-gal-toolbar";
+  const count = document.createElement("span");
+  count.className = "ed-gal-count";
+  const actions = document.createElement("span");
+  actions.className = "ed-gal-actions";
+  const selectAll = galleryAction(t("a.gallery.select.all"));
+  const selectNone = galleryAction(t("a.gallery.select.none"));
+  actions.append(selectAll, selectNone);
+  tools.append(count, actions);
   const grid = document.createElement("div");
   grid.className = "ed-gal-grid";
-  island.append(grid);
+  island.append(tools, grid);
+  selectAll.addEventListener("click", () => {
+    for (const box of grid.querySelectorAll("input")) box.checked = true;
+    updateGalleryCount(island);
+    notifyChange();
+  });
+  selectNone.addEventListener("click", () => {
+    for (const box of grid.querySelectorAll("input")) box.checked = false;
+    updateGalleryCount(island);
+    notifyChange();
+  });
   island.dataset.initialIds = (block.assetIds ?? []).join(",");
   syncGalleryItems(island, getAssets(), new Set(block.assetIds ?? []));
   return island;
+}
+
+function galleryAction(label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "ed-gal-action";
+  button.textContent = label;
+  return button;
 }
 
 function syncGalleryItems(island, assets, checkedIds = null) {
@@ -332,8 +363,20 @@ function syncGalleryItems(island, assets, checkedIds = null) {
     const name = document.createElement("span");
     name.textContent = asset.title || asset.file.name;
     item.append(box, thumb, name);
+    box.addEventListener("change", () => updateGalleryCount(island));
     grid.append(item);
   }
+  updateGalleryCount(island);
+}
+
+function updateGalleryCount(island) {
+  const count = island.querySelector(".ed-gal-count");
+  const grid = island.querySelector(".ed-gal-grid");
+  if (count === null || grid === null) return;
+  count.textContent = t("a.gallery.selected", {
+    selected: grid.querySelectorAll("input:checked").length,
+    total: grid.querySelectorAll("input").length,
+  });
 }
 
 function linkListIsland(block) {

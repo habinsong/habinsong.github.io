@@ -8,7 +8,7 @@ import { LIGHTS, ORIENTATIONS, SEASONS, emptyState, requireElement } from "./sit
 import { mountShare } from "./share.js";
 import { mountSound } from "./sound.js";
 import { mountStory } from "./story.js";
-import { viewMenu } from "./view-menu.js";
+import { viewMenu } from "./view-menu.js?v=20260802-gallery-ui";
 import { mountZine } from "./zine.js";
 import { loadIndex, search, searchField } from "./search.js";
 
@@ -77,7 +77,8 @@ const postsView = viewMenu({
 /* Three useful ways into the same wall: a thumbnail grid for scanning, a list
    for reading captions, and a contact sheet for quickly comparing frames. */
 const galleryView = viewMenu({
-  storageKey: "habin-view-gallery",
+  storageKey: "habin-view-gallery-v2",
+  defaultId: "contact",
   options: [
     { id: "grid", labelKey: "view.gallery.grid" },
     { id: "list", labelKey: "view.gallery.list" },

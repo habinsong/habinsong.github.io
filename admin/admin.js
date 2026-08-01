@@ -15,7 +15,7 @@ import {
   removeAssetIslands,
   serializeBlocks,
   setBlockType,
-} from "./editor.js";
+} from "./editor.js?v=20260802-editor-fix";
 import { readImageInfo } from "./exif.js";
 import { toWebp } from "./webp.js";
 import { renderAssets } from "./admin-render.js?v=20260802-admin-qa";

@@ -227,6 +227,24 @@ export const ADMIN_MESSAGES = {
     ja: "ギャラリーに含める写真",
     zh: "组图包含的照片",
   },
+  "a.gallery.selected": {
+    ko: "선택 {selected}/{total}",
+    en: "Selected {selected}/{total}",
+    ja: "選択 {selected}/{total}",
+    zh: "已选 {selected}/{total}",
+  },
+  "a.gallery.select.all": {
+    ko: "전체 선택",
+    en: "Select all",
+    ja: "すべて選択",
+    zh: "全选",
+  },
+  "a.gallery.select.none": {
+    ko: "전체 해제",
+    en: "Clear all",
+    ja: "すべて解除",
+    zh: "全部取消",
+  },
   "a.block.heading": {
     ko: "소제목",
     en: "Heading",
