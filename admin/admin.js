@@ -15,7 +15,7 @@ import {
   removeAssetIslands,
   serializeBlocks,
   insertTextBlock,
-} from "./editor.js?v=20260802-editor-v2";
+} from "./editor.js?v=20260802-editor-v3";
 import { readImageInfo } from "./exif.js";
 import { toWebp } from "./webp.js";
 import { renderAssets } from "./admin-render.js?v=20260802-admin-qa";
@@ -109,6 +109,13 @@ form.addEventListener("input", (event) => {
   }
   saveDraft();
   renderCurrentPreview();
+});
+
+form.addEventListener("mousedown", (event) => {
+  const target = event.target;
+  if (target instanceof HTMLElement && target.dataset.edText !== undefined) {
+    event.preventDefault();
+  }
 });
 
 photoFiles.addEventListener("change", () => {

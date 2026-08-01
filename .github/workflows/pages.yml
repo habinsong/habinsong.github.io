@@ -38,6 +38,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      # deploy-pages@v5 currently emits Node's upstream punycode deprecation.
+      NODE_OPTIONS: --no-deprecation
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

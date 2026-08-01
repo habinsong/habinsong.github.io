@@ -78,6 +78,9 @@ export function serializeBlocks() {
 
 export function insertTextBlock(type) {
   const tag = type === "heading" ? "h3" : type === "quote" ? "blockquote" : "p";
+  if (convertSelectedTextBlock(tag)) {
+    return;
+  }
   const block = textNode(tag, "");
   const anchor = currentBlock();
   const target = currentTextBlock();
@@ -448,6 +451,133 @@ function ensureTextBlock() {
 
 function isEmptyTextBlock(node) {
   return node.dataset.block === undefined && node.innerText.replace(/\u00a0/g, "").trim().length === 0;
+}
+
+function convertSelectedTextBlock(tag) {
+  const selection = window.getSelection();
+  if (selection === null || selection.rangeCount === 0 || selection.isCollapsed) {
+    return false;
+  }
+  const range = selection.getRangeAt(0);
+  const startBlock = rangeBoundaryBlock(range, "start");
+  const endBlock = rangeBoundaryBlock(range, "end");
+  if (startBlock === null || endBlock === null) {
+    return false;
+  }
+
+  const children = Array.from(canvas.children);
+  const startIndex = children.indexOf(startBlock);
+  const endIndex = children.indexOf(endBlock);
+  if (startIndex < 0 || endIndex < startIndex) {
+    return false;
+  }
+  const selectedBlocks = children.slice(startIndex, endIndex + 1);
+  if (!selectedBlocks.every(isTextBlock)) {
+    return false;
+  }
+
+  const startOffset = rangeBoundaryOffset(range, "start", startBlock);
+  const endOffset = rangeBoundaryOffset(range, "end", endBlock);
+  if (startOffset === null || endOffset === null || (startBlock === endBlock && startOffset >= endOffset)) {
+    return false;
+  }
+
+  const converted = [];
+  const updates = [];
+  for (let index = 0; index < selectedBlocks.length; index += 1) {
+    const block = selectedBlocks[index];
+    const text = textBlockValue(block);
+    const from = block === startBlock ? startOffset : 0;
+    const to = block === endBlock ? endOffset : text.length;
+    if (from < 0 || to < from || to > text.length) {
+      return false;
+    }
+
+    const replacements = [];
+    if (block === startBlock && from > 0) {
+      replacements.push(textNode(textBlockTag(block), text.slice(0, from)));
+    }
+    if (to > from) {
+      const selected = textNode(tag, text.slice(from, to));
+      replacements.push(selected);
+      converted.push(selected);
+    }
+    if (block === endBlock && to < text.length) {
+      replacements.push(textNode(textBlockTag(block), text.slice(to)));
+    }
+    updates.push({ block, replacements });
+  }
+
+  if (converted.length === 0) {
+    return false;
+  }
+  for (const { block, replacements } of updates) {
+    block.replaceWith(...replacements);
+  }
+  selectConvertedBlocks(converted[0], converted[converted.length - 1]);
+  notifyChange();
+  return true;
+}
+
+function isTextBlock(node) {
+  return node instanceof HTMLElement && node.dataset.block === undefined;
+}
+
+function rangeBoundaryBlock(range, boundary) {
+  const container = boundary === "start" ? range.startContainer : range.endContainer;
+  const offset = boundary === "start" ? range.startOffset : range.endOffset;
+  const block = directTextBlock(container);
+  if (block !== null) {
+    return block;
+  }
+  if (container !== canvas) {
+    return null;
+  }
+  const child = canvas.children[boundary === "start" ? offset : offset - 1];
+  return isTextBlock(child) ? child : null;
+}
+
+function rangeBoundaryOffset(range, boundary, block) {
+  const container = boundary === "start" ? range.startContainer : range.endContainer;
+  const offset = boundary === "start" ? range.startOffset : range.endOffset;
+  if (container === canvas) {
+    return boundary === "start" ? 0 : textBlockValue(block).length;
+  }
+  const before = document.createRange();
+  before.selectNodeContents(block);
+  try {
+    before.setEnd(container, offset);
+  } catch {
+    return null;
+  }
+  return before.toString().replace(/\u00a0/g, " ").length;
+}
+
+function directTextBlock(node) {
+  let element = node instanceof HTMLElement ? node : node.parentElement;
+  while (element !== null && element.parentElement !== canvas) {
+    element = element.parentElement;
+  }
+  return isTextBlock(element) ? element : null;
+}
+
+function textBlockValue(node) {
+  return node.innerText.replace(/\u00a0/g, " ");
+}
+
+function textBlockTag(node) {
+  const tag = node.tagName.toLowerCase();
+  return tag === "h3" || tag === "blockquote" ? tag : "p";
+}
+
+function selectConvertedBlocks(first, last) {
+  const range = document.createRange();
+  range.setStartBefore(first);
+  range.setEndAfter(last);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  canvas.focus();
 }
 
 function currentBlock() {
