@@ -1,12 +1,13 @@
 import { t } from "../i18n.js";
 
 export function renderPreview(preview, post, assets) {
-  const title = document.createElement("h3");
+  const title = document.createElement("h1");
   title.textContent = post.title || t("a.preview.untitled");
   const meta = document.createElement("p");
   meta.className = "post-meta";
   meta.textContent = [post.date, ...post.tags].filter(Boolean).join(" · ");
   const excerpt = document.createElement("p");
+  excerpt.className = "post-lead";
   excerpt.textContent = post.excerpt;
   preview.replaceChildren(meta, title, excerpt, ...post.blocks.map((block) => previewBlock(block, assets)));
 }
@@ -14,10 +15,11 @@ export function renderPreview(preview, post, assets) {
 function previewBlock(block, assets) {
   switch (block.type) {
     case "heading":
-      return textNode("h4", block.text);
+      return textNode("h2", block.text, "post-heading");
     case "paragraph":
+      return textNode("p", block.text, "post-body-copy");
     case "quote":
-      return textNode("p", block.text);
+      return textNode("blockquote", block.text);
     case "photo":
       return previewPhoto(block.photo, assets, block.comment);
     case "gallery":
@@ -29,36 +31,42 @@ function previewBlock(block, assets) {
   }
 }
 
-function textNode(tag, value) {
+function textNode(tag, value, className = "") {
   const node = document.createElement(tag);
+  node.className = className;
   node.textContent = value;
   return node;
 }
 
 function previewGallery(photos, assets) {
   const group = document.createElement("div");
-  group.className = "preview-gallery";
+  group.className = "inline-gallery";
   group.append(...photos.map((photo) => previewPhoto(photo, assets)));
   return group;
 }
 
 function previewLinks(block) {
   const section = document.createElement("section");
-  section.className = "preview-link-list";
-  const heading = document.createElement("p");
+  section.className = "link-list";
+  const heading = document.createElement("h3");
   heading.textContent = block.title;
   section.append(heading);
+  const list = document.createElement("ul");
   for (const link of block.links) {
+    const item = document.createElement("li");
     const anchor = document.createElement("a");
     anchor.href = link.url;
     anchor.textContent = link.label;
-    section.append(anchor);
+    item.append(anchor);
+    list.append(item);
   }
+  section.append(list);
   return section;
 }
 
 function previewPhoto(photo, assets, comment = "") {
   const figure = document.createElement("figure");
+  figure.className = "photo-card";
   const asset = assets.find((item) => item.id === photo.assetId);
   if (asset !== undefined) {
     const image = document.createElement("img");

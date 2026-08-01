@@ -1,9 +1,9 @@
 import { currentLocale, initI18n, registerMessages, t } from "../i18n.js";
 import { SITE_MESSAGES } from "../messages.js";
-import { ADMIN_MESSAGES } from "./admin-messages.js?v=20260802-admin-qa";
+import { ADMIN_MESSAGES } from "./admin-messages.js?v=20260802-editor-v2";
 import { clearPersistedAssets, loadPersistedAssets, persistAsset, removePersistedAsset } from "./asset-store.js";
-import { buildPost, newAsset, normalizeSavedBlock, restoredAsset } from "./admin-model.js";
-import { downloadJsonFile, downloadZipFile } from "./admin-export.js";
+import { buildPost, newAsset, normalizeSavedBlock, restoredAsset } from "./admin-model.js?v=20260802-model-v2";
+import { downloadJsonFile, downloadZipFile } from "./admin-export.js?v=20260802-model-v2";
 import {
   initEditor,
   insertAllPhotoIslands,
@@ -14,12 +14,12 @@ import {
   refreshAssets,
   removeAssetIslands,
   serializeBlocks,
-  setBlockType,
-} from "./editor.js?v=20260802-editor-fix";
+  insertTextBlock,
+} from "./editor.js?v=20260802-editor-v2";
 import { readImageInfo } from "./exif.js";
 import { toWebp } from "./webp.js";
 import { renderAssets } from "./admin-render.js?v=20260802-admin-qa";
-import { renderPreview } from "./admin-preview.js";
+import { renderPreview } from "./admin-preview.js?v=20260802-preview-v2";
 import { gcd, isRecord, requireElement, setFormValue, today, uniqueId } from "./admin-utils.js";
 
 registerMessages(SITE_MESSAGES);
@@ -27,7 +27,6 @@ registerMessages(ADMIN_MESSAGES);
 initI18n();
 
 const DRAFT_KEY = "habin-photo-admin-draft-v1";
-const PREVIEW_KEY = "habin-photo-admin-preview-v1";
 const state = { assets: [], blocks: [] };
 let insertOnNextFiles = false;
 
@@ -40,8 +39,10 @@ const assetCount = requireElement("#asset-count");
 const assetDetailsToggle = requireElement("#asset-details-toggle");
 const canvas = requireElement("#editor-canvas");
 const preview = requireElement("#preview");
-const previewPanel = preview.closest(".preview-panel");
+const previewDialog = requireElement("#preview-dialog");
 const previewToggle = requireElement("#preview-toggle");
+const previewClose = requireElement("#preview-close");
+const editorNotice = requireElement("#editor-notice");
 const status = requireElement("#save-status");
 const validation = requireElement("#validation-output");
 const downloadJson = requireElement("#download-json");
@@ -59,7 +60,6 @@ initEditor({
 });
 
 document.title = t("a.doc.title");
-setPreviewVisibility(window.localStorage.getItem(PREVIEW_KEY) !== "off");
 await restoreDraft();
 renderAll();
 loadSeriesOptions();
@@ -81,17 +81,20 @@ importFile.addEventListener("change", async () => {
 
 window.addEventListener("langchange", () => {
   document.title = t("a.doc.title");
-  updatePreviewToggle();
   validation.textContent = "";
+  editorNotice.textContent = "";
   loadBlocks(state.blocks);
   renderAll();
 });
 
 previewToggle.addEventListener("click", () => {
-  const visible = previewToggle.getAttribute("aria-pressed") !== "true";
-  setPreviewVisibility(visible);
-  window.localStorage.setItem(PREVIEW_KEY, visible ? "on" : "off");
+  renderCurrentPreview();
+  if (!previewDialog.open) {
+    previewDialog.showModal();
+  }
 });
+
+previewClose.addEventListener("click", () => previewDialog.close());
 
 form.addEventListener("submit", (event) => {
   // Enter in a text field can trigger implicit form submission, which would
@@ -143,9 +146,9 @@ assetList.addEventListener("click", () => {
 form.addEventListener("click", async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
-  const blockType = target.dataset.edBlock;
-  if (blockType !== undefined) {
-    setBlockType(blockType);
+  const textType = target.dataset.edText;
+  if (textType !== undefined) {
+    insertTextBlock(textType);
     return;
   }
   const insertKind = target.dataset.edInsert;
@@ -176,6 +179,7 @@ form.addEventListener("click", async (event) => {
 function handleInsert(kind) {
   if (kind === "photo") {
     insertOnNextFiles = true;
+    editorNotice.textContent = "";
     photoFiles.click();
     return;
   }
@@ -184,7 +188,7 @@ function handleInsert(kind) {
     return;
   }
   if (state.assets.length === 0) {
-    validation.textContent = t("a.msg.noassets");
+    editorNotice.textContent = t("a.msg.noassets");
     return;
   }
   if (kind === "all-photos") {
@@ -422,6 +426,7 @@ async function loadSeriesOptions() {
 }
 
 function editorChanged() {
+  editorNotice.textContent = "";
   state.blocks = serializeBlocks();
   saveDraft();
   renderCurrentPreview();
@@ -454,18 +459,6 @@ function renderCurrentPreview() {
   renderPreview(preview, buildPost(form, state), state.assets);
 }
 
-function setPreviewVisibility(visible) {
-  previewPanel.hidden = !visible;
-  previewToggle.setAttribute("aria-pressed", String(visible));
-  previewToggle.closest(".admin-shell")?.classList.toggle("is-preview-hidden", !visible);
-  updatePreviewToggle();
-}
-
-function updatePreviewToggle() {
-  const visible = previewToggle.getAttribute("aria-pressed") === "true";
-  previewToggle.textContent = t(visible ? "a.preview.toggle.on" : "a.preview.toggle.off");
-}
-
 function saveDraft() {
   const post = buildPost(form, state);
   window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...post, blocks: state.blocks }));
@@ -482,5 +475,6 @@ function resetAll() {
   setDefaultDate();
   loadBlocks([]);
   renderAll();
+  editorNotice.textContent = "";
   validation.textContent = t("a.msg.reset");
 }

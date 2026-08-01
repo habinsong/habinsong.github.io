@@ -76,19 +76,22 @@ export function serializeBlocks() {
   return blocks;
 }
 
-export function setBlockType(type) {
-  const target = currentTextBlock();
-  if (target === null) {
-    return;
-  }
+export function insertTextBlock(type) {
   const tag = type === "heading" ? "h3" : type === "quote" ? "blockquote" : "p";
-  if (target.tagName.toLowerCase() === tag) {
-    return;
+  const block = textNode(tag, "");
+  const anchor = currentBlock();
+  const target = currentTextBlock();
+  const onlyBlock = canvas.children.length === 1 ? canvas.firstElementChild : null;
+  if (target !== null && isEmptyTextBlock(target)) {
+    target.replaceWith(block);
+  } else if (anchor !== null) {
+    anchor.after(block);
+  } else if (onlyBlock instanceof HTMLElement && isEmptyTextBlock(onlyBlock)) {
+    onlyBlock.replaceWith(block);
+  } else {
+    canvas.append(block);
   }
-  const replacement = document.createElement(tag);
-  replacement.append(...target.childNodes);
-  target.replaceWith(replacement);
-  placeCaretAtEnd(replacement);
+  placeCaretAtEnd(block);
   notifyChange();
 }
 
@@ -441,6 +444,10 @@ function ensureTextBlock() {
   if (canvas.children.length === 0) {
     canvas.append(textNode("p", ""));
   }
+}
+
+function isEmptyTextBlock(node) {
+  return node.dataset.block === undefined && node.innerText.replace(/\u00a0/g, "").trim().length === 0;
 }
 
 function currentBlock() {

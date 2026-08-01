@@ -194,8 +194,10 @@ function exportBlocks(form, state, block) {
         : (block.assetIds ?? []).map((id) => photoFromAsset(form, state, id)).filter((photo) => photo !== null);
       return photos.length === 0 ? [] : [{ type: "gallery", photos }];
     }
-    case "link-list":
-      return [{ type: "link-list", title: text(block.title, "Links"), links: parseLinks(block.linksText ?? "") }];
+    case "link-list": {
+      const links = parseLinks(block.linksText ?? "");
+      return links.length === 0 ? [] : [{ type: "link-list", title: text(block.title, "Links"), links }];
+    }
     default:
       return [];
   }
