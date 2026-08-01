@@ -34,6 +34,7 @@ PUBLIC_FILES = [
     "site-render.js",
     "post-page.js",
     "view-menu.js",
+    "search.js",
     "photos.json",
     "series.json",
     "site.json",
@@ -100,6 +101,7 @@ def main() -> None:
     write_post_pages(site, posts_index)
     write_series_pages(site, posts_index)
     write_archive_pages(site, posts_index)
+    write_search_index(posts_index)
     write_discovery_files(site, posts_index)
     print(f"release-ok: {OUT}")
 
@@ -360,6 +362,69 @@ def archive_page(site, year, members) -> str:
                 kind="website", head_extra=[], main=main)
 
 
+# Searching a static site means shipping what there is to search. One small
+# file holds every published post with its body flattened to plain text, and
+# every photograph with the words written about it.
+
+SEARCH_BODY_LIMIT = 2000
+
+
+def write_search_index(posts_index: dict[str, Any]) -> None:
+    titles = series_titles()
+    entries = []
+    for summary in published_posts(posts_index):
+        post = read_json(ROOT / summary["path"])
+        entries.append({
+            "id": summary["id"],
+            "title": summary["title"],
+            "date": summary.get("date", ""),
+            "excerpt": summary.get("excerpt", ""),
+            "tags": [str(tag) for tag in summary.get("tags", [])],
+            "series": titles.get(summary.get("series", ""), ""),
+            "text": body_text(post)[:SEARCH_BODY_LIMIT],
+        })
+
+    photos = []
+    for photo in read_json(ROOT / "photos.json").get("photos", []):
+        if not isinstance(photo, dict) or not photo.get("src"):
+            continue
+        photos.append({
+            "id": str(photo.get("id", "")),
+            "words": " ".join(
+                str(photo.get(field, ""))
+                for field in ("title", "alt", "place", "year", "details")
+            ).strip(),
+        })
+
+    (OUT / "search.json").write_text(
+        json.dumps({"version": 1, "posts": entries, "photos": photos}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    if entries or photos:
+        print(f"search: {len(entries)} post(s), {len(photos)} photo(s)")
+
+
+def body_text(post: dict[str, Any]) -> str:
+    words: list[str] = []
+    for block in post.get("blocks", []):
+        if not isinstance(block, dict):
+            continue
+        if block.get("text"):
+            words.append(str(block["text"]))
+        if block.get("comment"):
+            words.append(str(block["comment"]))
+        photo = block.get("photo")
+        if isinstance(photo, dict):
+            words.append(str(photo.get("alt", "")))
+        for entry in block.get("photos", []) or []:
+            if isinstance(entry, dict):
+                words.append(str(entry.get("alt", "")))
+        for link in block.get("links", []) or []:
+            if isinstance(link, dict):
+                words.append(str(link.get("label", "")))
+    return " ".join(word for word in words if word)
+
+
 def write_page(directory: Path, html: str) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "index.html").write_text(html, encoding="utf-8")
@@ -420,6 +485,11 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         '    <a href="/#archive" data-i18n="nav.archive">Archive</a>',
         '    <a href="/#about" data-i18n="nav.about">About</a>',
         "  </nav>",
+        '  <div id="search-slot">',
+        '    <form class="search" role="search">',
+        '      <input type="search" class="search-input" autocomplete="off" data-i18n-attrs="placeholder:search.label;aria-label:search.label">',
+        "    </form>",
+        "  </div>",
         "</header>",
         '<main id="main">',
         '  <section class="post-detail">',

@@ -9,6 +9,15 @@ import { SITE_MESSAGES } from "./messages.js";
 registerMessages(SITE_MESSAGES);
 initI18n();
 
+/* A post page carries no index of its own; searching from here hands the
+   words to the front page, which has them. */
+const search = document.querySelector("#search-slot input");
+search?.closest("form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const query = search.value.trim();
+  window.location.href = query === "" ? "/" : `/#q=${encodeURIComponent(query)}`;
+});
+
 const frames = Array.from(document.querySelectorAll(".photo-card .photo-frame"));
 const items = frames.map((frame) => {
   const card = frame.closest(".photo-card");

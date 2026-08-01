@@ -10,6 +10,15 @@
     flex-direction: column;
   }
 
+  .search-input,
+  .search-input:focus {
+    width: 100%;
+  }
+
+  .search-results {
+    width: min(calc(100% - var(--space-8)), var(--content));
+  }
+
   .site-header {
     padding-inline: var(--space-4);
   }

@@ -5,6 +5,7 @@ import { loadJson, loadPhotos, loadPosts, loadSeries, normalizePostDetail } from
 import { archiveYear, collectPostPhotos, lightboxItem, photoCard, postArticle, postCard, postNav, seriesCard } from "./site-render.js";
 import { emptyState, requireElement } from "./site-utils.js";
 import { viewMenu } from "./view-menu.js";
+import { loadIndex, search, searchField } from "./search.js";
 
 registerMessages(SITE_MESSAGES);
 initI18n();
@@ -24,6 +25,7 @@ const state = {
   postsPage: 1,
   photosShown: PHOTOS_PER_STEP,
   tag: "",
+  query: "",
 };
 const grid = requireElement("#photo-grid");
 const photoCount = requireElement("#gallery-count");
@@ -53,10 +55,15 @@ const galleryView = viewMenu({
   ],
   onPick: () => renderPhotos(),
 });
+const field = searchField((value) => runSearch(value));
+requireElement("#search-slot").append(field.node);
+
 requireElement("#posts-view").append(postsView.node);
 requireElement("#gallery-view").append(galleryView.node);
 const photoMore = requireElement("#gallery-more");
 const postDetail = requireElement("#post-detail");
+const searchPanel = requireElement("#search-results");
+const pageSections = ["posts", "series", "gallery", "archive", "about"].map((id) => requireElement(`#${id}`));
 const seriesDetail = requireElement("#series-detail");
 const photoTemplate = requireElement("#photo-card-template");
 const postTemplate = requireElement("#post-card-template");
@@ -95,6 +102,7 @@ window.addEventListener("hashchange", () => {
 window.addEventListener("langchange", () => {
   postsView.relabel();
   galleryView.relabel();
+  field.relabel();
   renderAll();
   renderRoute({ keepScroll: true });
 });
@@ -104,6 +112,7 @@ state.photos = photos;
 state.posts = posts;
 state.series = series;
 renderAll();
+applySearchFromHash();
 applyTagFromHash();
 await renderRoute({ keepScroll: true });
 openPhotoFromHash();
@@ -376,6 +385,79 @@ function renderSeriesRoute(seriesId, options) {
   document.title = t("doc.title.post", { title: entry.title });
   if (options.keepScroll !== true) {
     seriesDetail.scrollIntoView({ block: "start" });
+  }
+}
+
+/* Searching swaps the page for its results and leaves the address behind, so
+   a search can be sent to someone or reloaded. */
+async function runSearch(query) {
+  state.query = query;
+  const clean = query.trim();
+  history.replaceState(null, "", clean === "" ? window.location.pathname : `#q=${encodeURIComponent(clean)}`);
+
+  for (const section of pageSections) {
+    section.hidden = clean !== "";
+  }
+  if (clean === "") {
+    searchPanel.hidden = true;
+    searchPanel.replaceChildren();
+    return;
+  }
+
+  await loadIndex();
+  if (state.query.trim() !== clean) {
+    return;
+  }
+  const found = search(clean, state.photos);
+  searchPanel.hidden = false;
+  searchPanel.replaceChildren(...searchResults(clean, found));
+}
+
+function searchResults(query, found) {
+  const nodes = [];
+  const heading = document.createElement("p");
+  heading.className = "search-count";
+  heading.textContent = t("search.count", {
+    query,
+    posts: found.posts.length,
+    photos: found.photos.length,
+  });
+  nodes.push(heading);
+
+  if (found.posts.length === 0 && found.photos.length === 0) {
+    nodes.push(emptyState(t("search.none.title")));
+    return nodes;
+  }
+
+  if (found.posts.length > 0) {
+    const list = document.createElement("div");
+    list.className = "posts-list is-list";
+    list.append(...found.posts.map((post) => postCard(
+      { ...post, tags: post.tags, series: "" },
+      postTemplate,
+      post.series,
+    )));
+    nodes.push(list);
+  }
+
+  if (found.photos.length > 0) {
+    const strip = document.createElement("div");
+    strip.className = "photo-grid is-dense";
+    strip.append(...found.photos.map((photo) => photoCard(photo, photoTemplate)));
+    strip.addEventListener("photo:open", (event) => {
+      const start = found.photos.findIndex((photo) => photo.id === event.detail.id);
+      openLightbox(found.photos.map(lightboxItem), Math.max(start, 0));
+    });
+    nodes.push(strip);
+  }
+  return nodes;
+}
+
+function applySearchFromHash() {
+  const wanted = hashParam("q");
+  if (wanted !== "") {
+    field.set(wanted);
+    runSearch(wanted);
   }
 }
 

@@ -359,6 +359,18 @@ export const SITE_MESSAGES = {
     ja: "デジタルとフィルムで写真を撮っています。お問い合わせはメールでお願いします。",
     zh: "我用数码与胶片拍摄。如有事宜，请发邮件联系。",
   },
+  "search.label": {
+    ko: "검색", en: "Search", ja: "検索", zh: "搜索",
+  },
+  "search.count": {
+    ko: "“{query}” · 글 {posts}편 · 사진 {photos}장",
+    en: "“{query}” · {posts} post(s) · {photos} photo(s)",
+    ja: "「{query}」· 記事 {posts} 件 · 写真 {photos} 枚",
+    zh: "「{query}」· 文章 {posts} 篇 · 照片 {photos} 张",
+  },
+  "search.none.title": {
+    ko: "찾은 것이 없습니다.", en: "Nothing found.", ja: "見つかりませんでした。", zh: "没有找到。",
+  },
   "post.related": {
     ko: "함께 보면 좋은 글", en: "Related posts", ja: "あわせて読む", zh: "相关文章",
   },
