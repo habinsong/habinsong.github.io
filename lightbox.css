@@ -72,6 +72,10 @@
   height: auto;
 }
 
+.lightbox.is-mono .lightbox-stage img {
+  filter: grayscale(1);
+}
+
 .lightbox-stage figcaption {
   max-width: var(--measure);
   padding: 0;

@@ -2,7 +2,7 @@ import { currentLocale, initI18n, registerMessages, t } from "../i18n.js";
 import { SITE_MESSAGES } from "../messages.js";
 import { ADMIN_MESSAGES } from "./admin-messages.js";
 import { clearPersistedAssets, loadPersistedAssets, persistAsset, removePersistedAsset } from "./asset-store.js";
-import { buildPost, newAsset, normalizeSavedBlock } from "./admin-model.js";
+import { buildPost, newAsset, normalizeSavedBlock, restoredAsset } from "./admin-model.js";
 import { downloadJsonFile, downloadZipFile } from "./admin-export.js";
 import {
   initEditor,
@@ -173,7 +173,7 @@ function handleInsert(kind) {
 async function restoreDraft() {
   try {
     const records = await loadPersistedAssets();
-    state.assets = records.map((record) => ({ ...record, url: URL.createObjectURL(record.file) }));
+    state.assets = records.map((record) => ({ ...restoredAsset(record), url: URL.createObjectURL(record.file) }));
   } catch (error) {
     console.error(error);
     state.assets = [];
@@ -192,6 +192,7 @@ async function restoreDraft() {
     setFormValue(form, "series", typeof draft.seriesTitle === "string" ? draft.seriesTitle : "");
     setFormValue(form, "tags", Array.isArray(draft.tags) ? draft.tags.join(", ") : "");
     setFormValue(form, "excerpt", typeof draft.excerpt === "string" ? draft.excerpt : "");
+    applySoundtrack(draft.soundtrack);
     state.blocks = Array.isArray(draft.blocks) ? draft.blocks.map(normalizeSavedBlock) : [];
     loadBlocks(state.blocks);
   } catch (error) {
@@ -200,6 +201,12 @@ async function restoreDraft() {
     setDefaultDate();
     loadBlocks([]);
   }
+}
+
+function applySoundtrack(soundtrack) {
+  const record = isRecord(soundtrack) ? soundtrack : {};
+  setFormValue(form, "soundtrack", typeof record.url === "string" ? record.url : "");
+  setFormValue(form, "soundtrackLabel", typeof record.label === "string" ? record.label : "");
 }
 
 function applyImportedPost(data) {
@@ -213,6 +220,7 @@ function applyImportedPost(data) {
   setFormValue(form, "tags", Array.isArray(data.tags) ? data.tags.join(", ") : "");
   const seriesId = typeof data.series === "string" ? data.series : "";
   setFormValue(form, "series", seriesTitleById.get(seriesId) ?? seriesId);
+  applySoundtrack(data.soundtrack);
   state.blocks = data.blocks.map(importBlock).filter((block) => block !== null);
   loadBlocks(state.blocks);
   editorChanged();
@@ -300,41 +308,58 @@ async function fillFromImage(asset, file) {
     asset.width = info.width / divisor;
     asset.height = info.height / divisor;
   }
-  const details = exifDetails(info.exif);
-  if (details.length > 0) {
-    asset.details = details;
+  /* The camera already wrote the note; it is copied into its own boxes so the
+     site can set it as a note rather than as one run-on line. Focal length has
+     no box of its own and stays in the free line beside the lens. */
+  fillNotes(asset, info.exif);
+  const focal = focalLength(info.exif);
+  if (focal.length > 0 && asset.details.length === 0) {
+    asset.details = focal;
   }
-  const year = info.exif.dateTimeOriginal?.slice(0, 4) ?? "";
-  if (/^\d{4}$/.test(year)) {
-    asset.year = year;
+  const shot = shotDate(info.exif);
+  if (shot.length > 0) {
+    asset.date = shot;
+    asset.year = shot.slice(0, 4);
   }
 }
 
-function exifDetails(exif) {
-  const parts = [];
+function fillNotes(asset, exif) {
+  const written = {
+    camera: cameraName(exif),
+    lens: exif.lens ?? "",
+    aperture: exif.fnumber === undefined ? "" : `f/${(exif.fnumber.num / exif.fnumber.den).toFixed(1).replace(/\.0$/, "")}`,
+    shutter: shutterSpeed(exif),
+    iso: typeof exif.iso === "number" && exif.iso > 0 ? String(exif.iso) : "",
+  };
+  for (const [field, value] of Object.entries(written)) {
+    if (value.length > 0 && asset.exif[field].length === 0) {
+      asset.exif[field] = value;
+    }
+  }
+}
+
+function cameraName(exif) {
   const make = exif.make ?? "";
   const model = exif.model ?? "";
-  const camera = model.toLowerCase().startsWith(make.toLowerCase()) ? model : [make, model].filter(Boolean).join(" ");
-  if (camera.length > 0) {
-    parts.push(camera);
+  return model.toLowerCase().startsWith(make.toLowerCase()) ? model : [make, model].filter(Boolean).join(" ");
+}
+
+function shutterSpeed(exif) {
+  if (exif.exposure === undefined) {
+    return "";
   }
-  if (exif.lens !== undefined) {
-    parts.push(exif.lens);
-  }
-  if (exif.focal !== undefined) {
-    parts.push(`${Math.round(exif.focal.num / exif.focal.den)}mm`);
-  }
-  if (exif.fnumber !== undefined) {
-    parts.push(`f/${(exif.fnumber.num / exif.fnumber.den).toFixed(1).replace(/\.0$/, "")}`);
-  }
-  if (exif.exposure !== undefined) {
-    const value = exif.exposure.num / exif.exposure.den;
-    parts.push(value >= 1 ? `${value}s` : `1/${Math.round(exif.exposure.den / exif.exposure.num)}`);
-  }
-  if (typeof exif.iso === "number" && exif.iso > 0) {
-    parts.push(`ISO ${exif.iso}`);
-  }
-  return parts.join(" · ");
+  const value = exif.exposure.num / exif.exposure.den;
+  return value >= 1 ? `${value}s` : `1/${Math.round(exif.exposure.den / exif.exposure.num)}`;
+}
+
+function focalLength(exif) {
+  return exif.focal === undefined ? "" : `${Math.round(exif.focal.num / exif.focal.den)}mm`;
+}
+
+function shotDate(exif) {
+  const stamp = exif.dateTimeOriginal ?? "";
+  const match = /^(\d{4}):(\d{2}):(\d{2})/.exec(stamp);
+  return match === null ? "" : `${match[1]}-${match[2]}-${match[3]}`;
 }
 
 async function handleAction(target) {

@@ -323,6 +323,48 @@ export const ADMIN_MESSAGES = {
     ja: "年",
     zh: "年份",
   },
+  "a.field.shotdate": {
+    ko: "촬영일",
+    en: "Shot on",
+    ja: "撮影日",
+    zh: "拍摄日期",
+  },
+  "a.field.shottime": {
+    ko: "촬영 시각",
+    en: "Shot at",
+    ja: "撮影時刻",
+    zh: "拍摄时刻",
+  },
+  "a.field.format": {
+    ko: "포맷",
+    en: "Format",
+    ja: "フォーマット",
+    zh: "画幅",
+  },
+  "a.field.subjects": {
+    ko: "주제 (쉼표로 구분)",
+    en: "Subjects (comma separated)",
+    ja: "主題（カンマ区切り）",
+    zh: "主题（逗号分隔）",
+  },
+  "a.field.soundtrack": {
+    ko: "사운드트랙 (유튜브 주소)",
+    en: "Sound track (YouTube address)",
+    ja: "サウンドトラック（YouTube アドレス）",
+    zh: "配乐（YouTube 地址）",
+  },
+  "a.field.soundtrack.label": {
+    ko: "사운드트랙 표기 (예: Artist — Song)",
+    en: "Sound track label (e.g. Artist — Song)",
+    ja: "サウンドトラック表記（例: Artist — Song）",
+    zh: "配乐标注（例: Artist — Song）",
+  },
+  "a.err.soundtrack": {
+    ko: "사운드트랙 주소가 유튜브 주소가 아닙니다.",
+    en: "The sound track address is not a YouTube address.",
+    ja: "サウンドトラックのアドレスが YouTube のものではありません。",
+    zh: "配乐地址不是 YouTube 地址。",
+  },
   "a.field.ratio.width": {
     ko: "비율(가로)",
     en: "Ratio width",

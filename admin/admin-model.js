@@ -1,4 +1,6 @@
 import { t } from "../i18n.js";
+import { EXIF_FIELDS } from "../site-utils.js";
+import { videoId } from "../sound.js";
 import { extensionOf, isRecord, safeUrl, slug, text, uniqueId } from "./admin-utils.js";
 
 function rawText(value) {
@@ -22,10 +24,42 @@ export function newAsset(file) {
     tone: "color",
     place: "",
     year: new Date().getFullYear().toString(),
+    date: "",
+    time: "",
+    format: "",
+    subjects: "",
     details: "",
+    exif: emptyExif(),
     width: 3,
     height: 2,
   };
+}
+
+export function emptyExif() {
+  return Object.fromEntries(EXIF_FIELDS.map((field) => [field, ""]));
+}
+
+/* A draft saved before a field existed comes back without it. Every asset read
+   from storage is brought up to the shape the panel expects. */
+export function restoredAsset(record) {
+  return {
+    date: "",
+    time: "",
+    format: "",
+    subjects: "",
+    details: "",
+    ...record,
+    exif: { ...emptyExif(), ...(isRecord(record.exif) ? record.exif : {}) },
+  };
+}
+
+/* Only what was actually written down goes into the file. A frame with no
+   notes carries no empty note. */
+function writtenExif(exif) {
+  const kept = Object.entries(isRecord(exif) ? exif : {})
+    .filter(([field, value]) => EXIF_FIELDS.includes(field) && rawText(value).length > 0)
+    .map(([field, value]) => [field, rawText(value)]);
+  return kept.length > 0 ? Object.fromEntries(kept) : null;
 }
 
 export function buildPost(form, state) {
@@ -33,7 +67,7 @@ export function buildPost(form, state) {
   const title = rawText(data.get("title"));
   const id = slug(title) || "untitled-post";
   const seriesTitle = rawText(data.get("series"));
-  return {
+  const post = {
     id,
     title,
     date: text(data.get("date"), new Date().toISOString().slice(0, 10)),
@@ -45,6 +79,11 @@ export function buildPost(form, state) {
     cover: coverPhoto(form, state),
     blocks: state.blocks.flatMap((block) => exportBlocks(form, state, block)),
   };
+  const soundtrack = rawText(data.get("soundtrack"));
+  if (soundtrack.length > 0) {
+    post.soundtrack = { url: soundtrack, label: rawText(data.get("soundtrackLabel")) };
+  }
+  return post;
 }
 
 export function postSummary(post) {
@@ -70,7 +109,8 @@ export function photoFromAsset(form, state, assetId) {
   }
   const postId = slug(text(new FormData(form).get("title"), "untitled-post"));
   const filename = `${asset.id}.${extensionOf(asset.file.name)}`;
-  return {
+  const exif = writtenExif(asset.exif);
+  const photo = {
     id: asset.id,
     title: text(asset.title, asset.file.name),
     medium: asset.medium,
@@ -84,6 +124,19 @@ export function photoFromAsset(form, state, assetId) {
     height: asset.height,
     assetId: asset.id,
   };
+  for (const [field, value] of [["date", asset.date], ["time", asset.time], ["format", asset.format]]) {
+    if (rawText(value).length > 0) {
+      photo[field] = rawText(value);
+    }
+  }
+  const subjects = splitTags(rawText(asset.subjects));
+  if (subjects.length > 0) {
+    photo.subjects = subjects;
+  }
+  if (exif !== null) {
+    photo.exif = exif;
+  }
+  return photo;
 }
 
 export function allPhotos(post) {
@@ -113,6 +166,7 @@ export function validatePost(post) {
   if (post.title.trim().length === 0) errors.push(t("a.err.title"));
   if (post.excerpt.trim().length === 0) errors.push(t("a.err.excerpt"));
   if (post.blocks.length === 0) errors.push(t("a.err.blocks"));
+  if (post.soundtrack !== undefined && videoId(post.soundtrack.url) === "") errors.push(t("a.err.soundtrack"));
   for (const block of post.blocks) {
     validateBlock(block, errors);
   }

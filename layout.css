@@ -252,6 +252,95 @@ h2 {
   margin: 0;
 }
 
+.site-footer a {
+  margin-left: auto;
+}
+
+/* ── keyboard ───────────────────────────────────────────── */
+/* The way in sits with the small print. A screen without keys never shows it. */
+
+.keys-open {
+  display: none;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+  text-transform: inherit;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .keys-open {
+    display: inline;
+  }
+}
+
+.keys-open:hover {
+  color: var(--ink);
+}
+
+.shortcuts {
+  max-width: min(440px, calc(100% - var(--space-8)));
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: var(--space-6);
+}
+
+.shortcuts::backdrop {
+  background: rgb(255 255 255 / 0.88);
+}
+
+.shortcuts-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.shortcuts-bar h2 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.shortcuts-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-3) var(--space-5);
+  margin: 0;
+}
+
+.shortcuts-list dt {
+  display: flex;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.shortcuts-list dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.shortcuts-list kbd {
+  border: 1px solid var(--line);
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 2px var(--space-2);
+}
+
 /* ── paging ─────────────────────────────────────────────── */
 /* The gallery is scrolled, so it grows a screenful at a time. The post list is
    read, so it is cut into pages you can point at. */

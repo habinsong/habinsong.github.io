@@ -1,10 +1,15 @@
-import { initI18n, registerMessages, t, tCount } from "./i18n.js";
+import { currentLocale, initI18n, registerMessages, t, tCount } from "./i18n.js";
+import { initKeys } from "./keys.js";
 import { openLightbox } from "./lightbox.js";
 import { SITE_MESSAGES } from "./messages.js";
 import { loadJson, loadPhotos, loadPosts, loadSeries, normalizePostDetail } from "./site-data.js";
-import { archiveYear, collectPostPhotos, lightboxItem, photoCard, postArticle, postCard, postNav, seriesCard } from "./site-render.js";
-import { emptyState, requireElement } from "./site-utils.js";
+import { archiveYear, collectPostPhotos, lightboxItem, photoCard, placeHref, postArticle, postCard, postHref, postNav, seriesCard } from "./site-render.js";
+import { LIGHTS, ORIENTATIONS, SEASONS, emptyState, requireElement } from "./site-utils.js";
+import { mountShare } from "./share.js";
+import { mountSound } from "./sound.js";
+import { mountStory } from "./story.js";
 import { viewMenu } from "./view-menu.js";
+import { mountZine } from "./zine.js";
 import { loadIndex, search, searchField } from "./search.js";
 
 registerMessages(SITE_MESSAGES);
@@ -26,7 +31,23 @@ const state = {
   photosShown: PHOTOS_PER_STEP,
   tag: "",
   query: "",
+  /* every way of narrowing the same wall of photographs; they stack */
+  narrow: {},
 };
+
+/* The gallery reads like the index at the back of a book: one line per way in,
+   the values that are actually on a photograph, and how many frames each one
+   leaves. Adding a way in means adding a line here and nothing else. */
+const INDEXES = [
+  { key: "place", labelKey: "places.title", values: (photos) => byName(unique(photos.map((photo) => photo.place))) },
+  { key: "subject", labelKey: "subjects.title", values: (photos) => byName(unique(photos.flatMap((photo) => photo.subjects))) },
+  { key: "year", labelKey: "years.title", values: (photos) => unique(photos.map((photo) => photo.year)).filter((year) => /^\d{4}$/.test(year)).sort().reverse() },
+  { key: "season", labelKey: "seasons.title", values: (photos) => present(SEASONS, photos, "season"), label: (value) => t(`season.${value}`) },
+  { key: "light", labelKey: "notes.light", values: (photos) => present(LIGHTS, photos, "light"), label: (value) => t(`light.${value}`) },
+  { key: "format", labelKey: "formats.title", values: (photos) => byName(unique(photos.map((photo) => photo.format))) },
+  { key: "camera", labelKey: "cameras.title", values: (photos) => byName(unique(photos.map((photo) => photo.exif.camera))) },
+  { key: "orientation", labelKey: "orientations.title", values: (photos) => present(ORIENTATIONS, photos, "orientation"), label: (value) => t(`orientation.${value}`) },
+];
 const grid = requireElement("#photo-grid");
 const photoCount = requireElement("#gallery-count");
 const postsList = requireElement("#posts-list");
@@ -46,12 +67,15 @@ const postsView = viewMenu({
   ],
   onPick: () => renderPosts(),
 });
+/* Three densities for the same wall: the editorial grid it was designed on, a
+   single column for reading one frame at a time, and a plain grey index for
+   looking across a body of work rather than at any one picture. */
 const galleryView = viewMenu({
   storageKey: "habin-view-gallery",
   options: [
-    { id: "grid", labelKey: "view.gallery.grid" },
-    { id: "large", labelKey: "view.gallery.large" },
-    { id: "dense", labelKey: "view.gallery.dense" },
+    { id: "editorial", labelKey: "view.gallery.editorial" },
+    { id: "essay", labelKey: "view.gallery.essay" },
+    { id: "index", labelKey: "view.gallery.index" },
   ],
   onPick: () => renderPhotos(),
 });
@@ -61,6 +85,8 @@ requireElement("#search-slot").append(field.node);
 requireElement("#posts-view").append(postsView.node);
 requireElement("#gallery-view").append(galleryView.node);
 const photoMore = requireElement("#gallery-more");
+const narrowBar = requireElement("#gallery-narrow");
+const indexRows = buildIndexRows(requireElement("#gallery-index"));
 const postDetail = requireElement("#post-detail");
 const searchPanel = requireElement("#search-results");
 const pageSections = ["posts", "series", "gallery", "archive", "about"].map((id) => requireElement(`#${id}`));
@@ -77,6 +103,7 @@ for (const button of filterButtons) {
     state.photosShown = PHOTOS_PER_STEP;
     updatePressedFilter();
     renderPhotos();
+    renderIndexes();
   });
 }
 
@@ -96,6 +123,13 @@ postDetail.addEventListener("photo:open", (event) => {
 });
 
 window.addEventListener("hashchange", () => {
+  /* A link to a narrowed gallery has to work when it lands in a tab that is
+     already open. Jumping to "#gallery" carries no narrowing and is left to
+     pass by, so reaching for the section does not undo what was chosen. */
+  if (applyGalleryFromHash()) {
+    renderPhotos();
+    renderIndexes();
+  }
   renderRoute();
 });
 
@@ -107,10 +141,21 @@ window.addEventListener("langchange", () => {
   renderRoute({ keepScroll: true });
 });
 
+initKeys({
+  focusSearch: () => field.focus(),
+  onEscape: () => {
+    if (state.query !== "") {
+      field.set("");
+      runSearch("");
+    }
+  },
+});
+
 const [photos, posts, series] = await Promise.all([loadPhotos(), loadPosts(), loadSeries()]);
 state.photos = photos;
 state.posts = posts;
 state.series = series;
+applyGalleryFromHash();
 renderAll();
 applySearchFromHash();
 applyTagFromHash();
@@ -119,6 +164,7 @@ openPhotoFromHash();
 
 function renderAll() {
   renderPhotos();
+  renderIndexes();
   renderPosts();
   renderSeries();
   renderArchive();
@@ -135,12 +181,12 @@ function visiblePhotos() {
 }
 
 function renderPhotos() {
-  grid.classList.toggle("is-large", galleryView.value() === "large");
-  grid.classList.toggle("is-dense", galleryView.value() === "dense");
+  grid.classList.toggle("is-essay", galleryView.value() === "essay");
+  grid.classList.toggle("is-index", galleryView.value() === "index");
   const visible = visiblePhotos();
   photoCount.textContent = countText(visible.length, state.photos.length);
   if (visible.length === 0) {
-    grid.replaceChildren(emptyState(t("empty.photos.title")));
+    grid.replaceChildren(emptyState(t(isNarrowed() ? "empty.narrowed.title" : "empty.photos.title")));
     photoMore.replaceChildren();
     return;
   }
@@ -335,9 +381,15 @@ async function renderPostRoute(postId, options) {
     const position = state.posts.indexOf(summary);
     postDetail.hidden = false;
     postDetail.replaceChildren(
+      soundSlot(post),
       postArticle(post, photoTemplate, seriesTitleOf(summary.series)),
+      postTools(summary),
       postNav(state.posts[position + 1], state.posts[position - 1]),
     );
+    mountZine(postDetail);
+    mountStory(postDetail);
+    mountShare(postDetail);
+    mountSound(postDetail);
     document.title = t("doc.title.post", { title: post.title });
     if (options.keepScroll !== true) {
       postDetail.scrollIntoView({ block: "start" });
@@ -347,6 +399,43 @@ async function renderPostRoute(postId, options) {
     postDetail.hidden = false;
     postDetail.replaceChildren(emptyState(t("post.failed.title"), t("post.failed.copy", { path: summary.path })));
   }
+}
+
+/* The same row of controls the written-out pages carry, so a post reached by
+   an old "#post=" link is no poorer than one reached by its own address. */
+function postTools(summary) {
+  const tools = document.createElement("div");
+  tools.className = "post-tools";
+
+  const story = document.createElement("div");
+  story.className = "story-slot";
+
+  const zine = document.createElement("div");
+  zine.className = "zine-slot";
+  zine.dataset.zine = "post";
+  zine.dataset.zineId = summary.id;
+  zine.dataset.zineTitle = summary.title;
+  zine.dataset.zineLead = summary.excerpt;
+  zine.dataset.zineDate = summary.date;
+  zine.dataset.zinePath = summary.path;
+
+  const share = document.createElement("div");
+  share.className = "share-slot";
+  share.dataset.shareUrl = new URL(postHref(summary.id), window.location.origin).href;
+  share.dataset.shareTitle = summary.title;
+
+  tools.append(story, zine, share);
+  return tools;
+}
+
+function soundSlot(post) {
+  const slot = document.createElement("div");
+  if (typeof post.soundtrack?.url === "string") {
+    slot.className = "sound-slot";
+    slot.dataset.soundUrl = post.soundtrack.url;
+    slot.dataset.soundLabel = typeof post.soundtrack.label === "string" ? post.soundtrack.label : "";
+  }
+  return slot;
 }
 
 function renderSeriesRoute(seriesId, options) {
@@ -442,7 +531,7 @@ function searchResults(query, found) {
 
   if (found.photos.length > 0) {
     const strip = document.createElement("div");
-    strip.className = "photo-grid is-dense";
+    strip.className = "photo-grid is-index";
     strip.append(...found.photos.map((photo) => photoCard(photo, photoTemplate)));
     strip.addEventListener("photo:open", (event) => {
       const start = found.photos.findIndex((photo) => photo.id === event.detail.id);
@@ -488,14 +577,35 @@ function openPhotoFromHash() {
   openLightbox(visible.map(lightboxItem), position);
 }
 
+/* The address carries one thing at a time — a post, a search, a photograph —
+   except when narrowing the gallery, where place, year and season travel
+   together as "#place=seoul&year=2026". */
 function hashParam(name) {
-  const hash = new URL(window.location.href).hash;
-  const prefix = `#${name}=`;
-  return hash.startsWith(prefix) ? decodeURIComponent(hash.slice(prefix.length)) : "";
+  const hash = new URL(window.location.href).hash.replace(/^#/, "");
+  return new URLSearchParams(hash).get(name) ?? "";
 }
 
-function matchesFilter(photo) {
-  switch (state.filter) {
+function matchesFilter(photo, overrides = {}) {
+  const narrow = { ...state.narrow, ...overrides };
+  return matchesMedium(photo, state.filter)
+    && INDEXES.every(({ key }) => carries(photo, key, narrow[key] ?? ""));
+}
+
+function carries(photo, key, value) {
+  if (value === "") {
+    return true;
+  }
+  if (key === "subject") {
+    return photo.subjects.includes(value);
+  }
+  if (key === "camera") {
+    return photo.exif.camera === value;
+  }
+  return photo[key] === value;
+}
+
+function matchesMedium(photo, filter) {
+  switch (filter) {
     case "film":
       return photo.medium === "film";
     case "digital":
@@ -506,4 +616,163 @@ function matchesFilter(photo) {
     default:
       return true;
   }
+}
+
+/* ── the index at the back of the book ──────────────────── */
+/* Each row is the same shape: everything, then every value that is actually on
+   a photograph, with the number of frames choosing it would leave. The counts
+   read the other rows, so a row never offers a dead end. */
+
+function buildIndexRows(host) {
+  const rows = {};
+  for (const index of INDEXES) {
+    const row = document.createElement("div");
+    row.className = "index-row";
+    row.hidden = true;
+
+    const label = document.createElement("h3");
+    label.className = "index-label";
+    label.dataset.i18n = index.labelKey;
+    label.textContent = t(index.labelKey);
+
+    const items = document.createElement("div");
+    items.className = "index-items";
+    items.setAttribute("role", "group");
+    items.dataset.i18nAttrs = `aria-label:index.aria.${index.key}`;
+    items.setAttribute("aria-label", t(`index.aria.${index.key}`));
+
+    row.append(label, items);
+    host.append(row);
+    rows[index.key] = { row, items };
+  }
+  return rows;
+}
+
+function renderIndexes() {
+  for (const index of INDEXES) {
+    const { row, items } = indexRows[index.key];
+    const values = index.values(state.photos);
+    row.hidden = values.length === 0;
+    items.replaceChildren(...(values.length === 0 ? [] : [
+      indexChoice(index, ""),
+      ...values.map((value) => indexChoice(index, value)),
+    ]));
+  }
+  renderNarrowBar();
+}
+
+function indexChoice(index, value) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "index-choice";
+  button.setAttribute("aria-pressed", String(narrowed(index.key) === value));
+  button.append(document.createTextNode(value === "" ? t("index.all") : labelFor(index, value)));
+
+  const count = document.createElement("span");
+  count.className = "index-count";
+  count.textContent = String(state.photos.filter((photo) => matchesFilter(photo, { [index.key]: value })).length);
+  button.append(count);
+
+  button.addEventListener("click", () => narrow(index.key, value));
+  return button;
+}
+
+function labelFor(index, value) {
+  return index.label === undefined ? value : index.label(value);
+}
+
+function narrowed(key) {
+  return state.narrow[key] ?? "";
+}
+
+function isNarrowed() {
+  return INDEXES.some((index) => narrowed(index.key) !== "");
+}
+
+function narrow(key, value) {
+  state.narrow[key] = narrowed(key) === value ? "" : value;
+  state.photosShown = PHOTOS_PER_STEP;
+  syncGalleryHash();
+  renderPhotos();
+  renderIndexes();
+}
+
+function clearNarrowing() {
+  state.narrow = {};
+  state.photosShown = PHOTOS_PER_STEP;
+  syncGalleryHash();
+  renderPhotos();
+  renderIndexes();
+}
+
+function renderNarrowBar() {
+  if (!isNarrowed()) {
+    narrowBar.replaceChildren();
+    return;
+  }
+  const note = document.createElement("p");
+  note.className = "narrow-note";
+  note.textContent = INDEXES
+    .filter((index) => narrowed(index.key) !== "")
+    .map((index) => labelFor(index, narrowed(index.key)))
+    .join(" · ");
+
+  const nodes = [note];
+  /* a place worth narrowing to is a place with a page of its own */
+  if (narrowed("place") !== "") {
+    const link = document.createElement("a");
+    link.className = "narrow-page";
+    link.href = placeHref(narrowed("place"));
+    link.textContent = t("narrow.page", { place: narrowed("place") });
+    nodes.push(link);
+  }
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "narrow-clear";
+  clear.textContent = t("narrow.clear");
+  clear.addEventListener("click", () => clearNarrowing());
+  nodes.push(clear);
+  narrowBar.replaceChildren(...nodes);
+}
+
+function unique(values) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function byName(values) {
+  return values.sort((a, b) => a.localeCompare(b, currentLocale()));
+}
+
+function present(candidates, photos, key) {
+  return candidates.filter((candidate) => photos.some((photo) => photo[key] === candidate));
+}
+
+function syncGalleryHash() {
+  if (!isNarrowed()) {
+    history.replaceState(null, "", window.location.pathname);
+    return;
+  }
+  const params = new URLSearchParams();
+  for (const index of INDEXES) {
+    if (narrowed(index.key) !== "") {
+      params.set(index.key, narrowed(index.key));
+    }
+  }
+  history.replaceState(null, "", `#${params.toString()}`);
+}
+
+function applyGalleryFromHash() {
+  const wanted = {};
+  for (const index of INDEXES) {
+    const value = hashParam(index.key);
+    if (value !== "" && index.values(state.photos).includes(value)) {
+      wanted[index.key] = value;
+    }
+  }
+  if (Object.keys(wanted).length === 0) {
+    return false;
+  }
+  state.narrow = wanted;
+  state.photosShown = PHOTOS_PER_STEP;
+  return true;
 }

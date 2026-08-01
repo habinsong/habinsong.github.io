@@ -1,6 +1,6 @@
 import { t, tCount } from "./i18n.js";
 import { normalizePhoto } from "./site-data.js";
-import { isRecord, safeUrl, text } from "./site-utils.js";
+import { EXIF_FIELDS, hasExif, isRecord, safeUrl, slug, text } from "./site-utils.js";
 
 // Every post is its own page. The hash route still works for links that were
 // shared before, but nothing on the site points at it any more.
@@ -10,6 +10,47 @@ export function postHref(id) {
 
 export function seriesHref(id) {
   return `/series/${encodeURIComponent(id)}/`;
+}
+
+export function placeHref(place) {
+  return `/places/${encodeURIComponent(slug(place))}/`;
+}
+
+/* What a photograph is made of, set the way it would be written in a darkroom
+   book: the term, then the figure, in a monospaced column. The terms carry
+   their i18n key so a clone of this list still follows the reader's language. */
+export function darkroomNotes(photo) {
+  if (!hasExif(photo.exif) && photo.time === "" && photo.light === "") {
+    return null;
+  }
+  const list = document.createElement("dl");
+  list.className = "darkroom-notes";
+  for (const field of EXIF_FIELDS) {
+    if (photo.exif[field].length > 0) {
+      list.append(...noteRow(`notes.${field}`, photo.exif[field]));
+    }
+  }
+  /* When the frame was made, and what the sun was doing at that hour — the
+     part of a note that is about the light rather than about the camera. */
+  if (photo.time !== "") {
+    list.append(...noteRow("notes.time", photo.time));
+  }
+  if (photo.light !== "") {
+    list.append(...noteRow("notes.light", t(`light.${photo.light}`), `light.${photo.light}`));
+  }
+  return list;
+}
+
+function noteRow(termKey, value, valueKey = "") {
+  const term = document.createElement("dt");
+  term.dataset.i18n = termKey;
+  term.textContent = t(termKey);
+  const figure = document.createElement("dd");
+  if (valueKey !== "") {
+    figure.dataset.i18n = valueKey;
+  }
+  figure.textContent = value;
+  return [term, figure];
 }
 
 export function photoCard(photo, template, options = {}) {
@@ -37,6 +78,10 @@ export function photoCard(photo, template, options = {}) {
   image.height = photo.height;
   caption.textContent = captionText(photo);
   meta.textContent = metaText(photo);
+  const notes = darkroomNotes(photo);
+  if (notes !== null) {
+    meta.after(notes);
+  }
   image.addEventListener("error", () => showMissingImage(frame, image, photo.src), { once: true });
   frame.addEventListener("click", () => {
     card.dispatchEvent(new CustomEvent("photo:open", { bubbles: true, detail: { id: photo.id } }));
@@ -241,6 +286,7 @@ export function lightboxItem(photo) {
     alt: photo.alt,
     caption: captionText(photo),
     meta: metaText(photo),
+    notes: darkroomNotes(photo),
   };
 }
 

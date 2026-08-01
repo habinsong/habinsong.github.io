@@ -51,8 +51,8 @@
   }
 
   /* two to a row is as dense as a phone can carry */
-  .photo-grid.is-dense .photo-card,
-  .photo-grid.is-dense .photo-card:nth-child(5n + 1) {
+  .photo-grid.is-index .photo-card,
+  .photo-grid.is-index .photo-card:nth-child(5n + 1) {
     grid-column: span 6;
   }
 

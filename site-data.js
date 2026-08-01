@@ -1,4 +1,4 @@
-import { DEFAULT_RATIO, isRecord, mediumValue, positiveNumber, slug, text } from "./site-utils.js";
+import { DEFAULT_RATIO, LIGHTS, isRecord, lightOf, mediumValue, normalizeExif, normalizeSubjects, orientationOf, photoDate, photoTime, positiveNumber, seasonOf, slug, text } from "./site-utils.js";
 
 const PHOTOS_URL = "photos.json";
 const POSTS_INDEX_URL = "content/posts/index.json";
@@ -77,6 +77,14 @@ export function normalizePhoto(raw, index = 0) {
   const record = isRecord(raw) ? raw : {};
   const title = text(record.title, `Frame ${String(index + 1).padStart(2, "0")}`);
   const tone = text(record.tone, "color").toLowerCase() === "bw" ? "bw" : "color";
+  /* A full date is worth more than a year: it puts the frame in a season. When
+     only a year was written down, the year is all the frame answers to. */
+  const date = photoDate(record.date);
+  const season = seasonOf(date);
+  const time = photoTime(record.time);
+  const width = positiveNumber(record.width, DEFAULT_RATIO.width);
+  const height = positiveNumber(record.height, DEFAULT_RATIO.height);
+  const light = text(record.light, "");
   return Object.freeze({
     id: text(record.id, slug(title, index)),
     title,
@@ -85,11 +93,19 @@ export function normalizePhoto(raw, index = 0) {
     src: text(record.src, ""),
     alt: text(record.alt, title),
     place: text(record.place, ""),
-    year: text(record.year, ""),
+    year: text(record.year, "") || date.slice(0, 4),
+    date,
+    season,
+    time,
+    light: LIGHTS.includes(light) ? light : lightOf(time, season),
+    format: text(record.format, ""),
+    subjects: normalizeSubjects(record.subjects),
+    orientation: orientationOf(width, height),
     details: text(record.details, ""),
+    exif: normalizeExif(record.exif),
     postId: text(record.postId, ""),
-    width: positiveNumber(record.width, DEFAULT_RATIO.width),
-    height: positiveNumber(record.height, DEFAULT_RATIO.height),
+    width,
+    height,
   });
 }
 
@@ -116,6 +132,13 @@ export function normalizePostDetail(payload, summary) {
     title: text(record.title, summary.title),
     date: text(record.date, summary.date),
     excerpt: text(record.excerpt, summary.excerpt),
+    soundtrack: normalizeSoundtrack(record.soundtrack),
     blocks: Array.isArray(record.blocks) ? record.blocks : [],
   });
+}
+
+export function normalizeSoundtrack(raw) {
+  const record = isRecord(raw) ? raw : {};
+  const url = text(record.url, "");
+  return url.length === 0 ? null : Object.freeze({ url, label: text(record.label, "") });
 }

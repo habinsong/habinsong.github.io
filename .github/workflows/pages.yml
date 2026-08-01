@@ -23,6 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Only the share previews need it, and release.py says so and carries on
+      # when it is missing — the site itself has no dependencies at all.
+      - name: Install the imaging library
+        run: python3 -m pip install --disable-pip-version-check --quiet pillow
+
       - name: Build the release
         run: python3 scripts/release.py
 

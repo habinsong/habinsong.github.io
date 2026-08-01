@@ -1,0 +1,272 @@
+/* The booklet. On screen it is a single column of sheets so the reader can
+   look before printing; on paper it is A4 with one plate to a page. The type
+   is the site's own — printing through the browser keeps it as type, not as a
+   picture of type, which is what makes the saved PDF worth keeping. */
+
+.zine-slot {
+  margin-top: var(--space-8);
+}
+
+.zine-open {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  padding: 0 0 var(--space-1);
+  text-transform: uppercase;
+}
+
+.zine-open:hover:not(:disabled),
+.zine-open:focus-visible {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.zine-open:disabled {
+  cursor: progress;
+  opacity: 0.5;
+}
+
+body.is-zine > *:not(.zine) {
+  display: none !important;
+}
+
+.zine-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--paper);
+  padding: var(--space-4) var(--space-6);
+}
+
+.zine-hint {
+  margin: 0 auto 0 0;
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+.zine-book {
+  width: min(calc(100% - var(--space-12)), var(--measure));
+  margin: 0 auto;
+  padding: var(--space-16) 0 var(--space-20);
+}
+
+.zine-page {
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: var(--space-16);
+  padding-bottom: var(--space-16);
+}
+
+.zine-cover {
+  padding-top: var(--space-16);
+}
+
+.zine-author {
+  margin: 0 0 var(--space-12);
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.zine-cover h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.zine-chapter h2 {
+  margin: 0;
+  font-size: clamp(24px, 3.4vw, 36px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.zine-lead {
+  margin: var(--space-6) 0 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.zine-stamp,
+.zine-number {
+  margin: 0 0 var(--space-2);
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.zine-stamp {
+  margin: var(--space-10) 0 0;
+}
+
+.zine-chapter .zine-stamp {
+  margin: 0 0 var(--space-3);
+}
+
+.zine-heading {
+  margin: var(--space-12) 0 var(--space-4);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.zine-copy {
+  margin: var(--space-5) 0;
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.zine-quote {
+  margin: var(--space-8) 0;
+  border-left: 1px solid var(--line);
+  padding-left: var(--space-5);
+  color: var(--muted);
+  font-size: 17px;
+  font-style: italic;
+  line-height: 1.7;
+}
+
+.zine-plate {
+  margin: var(--space-16) 0;
+}
+
+.zine-frame {
+  display: grid;
+  place-items: center;
+}
+
+.zine-frame img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.zine-plate figcaption {
+  max-width: none;
+  padding-top: var(--space-4);
+}
+
+.zine-links ul,
+.zine-colophon-list {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.zine-colophon-list {
+  list-style: none;
+  padding-left: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.zine-colophon h2 {
+  margin: 0 0 var(--space-6);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ── the sheet ──────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+
+  body.is-zine .zine-bar {
+    display: none;
+  }
+
+  body.is-zine .zine-book {
+    width: auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  body.is-zine .zine-page {
+    border-bottom: 0;
+    break-inside: avoid;
+    margin: 0;
+    padding: 0;
+  }
+
+  body.is-zine .zine-cover,
+  body.is-zine .zine-chapter {
+    break-after: page;
+    padding-top: 24mm;
+  }
+
+  body.is-zine .zine-plate {
+    break-before: page;
+    break-after: page;
+  }
+
+  body.is-zine .zine-colophon {
+    break-before: page;
+    padding-top: 24mm;
+  }
+
+  /* the plate has the page to itself: as much of it as the caption leaves */
+  body.is-zine .zine-frame img {
+    max-height: 205mm;
+    max-width: 100%;
+    width: auto;
+  }
+
+  body.is-zine .zine-copy,
+  body.is-zine .zine-quote {
+    font-size: 10.5pt;
+    line-height: 1.6;
+    orphans: 3;
+    widows: 3;
+  }
+
+  body.is-zine .zine-lead {
+    font-size: 12pt;
+  }
+
+  body.is-zine .caption-main {
+    font-size: 10pt;
+  }
+
+  body.is-zine .caption-meta,
+  body.is-zine .darkroom-notes,
+  body.is-zine .zine-number,
+  body.is-zine .zine-stamp {
+    font-size: 8pt;
+  }
+
+  body.is-zine .photo-comment {
+    font-size: 9pt;
+  }
+}

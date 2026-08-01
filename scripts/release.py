@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from datetime import timedelta
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, urlparse
 from xml.sax.saxutils import escape, quoteattr
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +25,7 @@ PUBLIC_FILES = [
     "posts.css",
     "responsive.css",
     "lightbox.css",
+    "zine.css",
     "app.js",
     "i18n.js",
     "messages.js",
@@ -35,6 +36,11 @@ PUBLIC_FILES = [
     "post-page.js",
     "view-menu.js",
     "search.js",
+    "keys.js",
+    "zine.js",
+    "story.js",
+    "share.js",
+    "sound.js",
     "photos.json",
     "series.json",
     "site.json",
@@ -50,6 +56,55 @@ class ReleaseError(Exception):
     def __str__(self) -> str:
         return self.message
 
+
+# What a frame was made with. The order and the keys match site-utils.js; the
+# English words here are only what shows before the page's script has put the
+# reader's own language in their place.
+EXIF_FIELDS = ["camera", "lens", "film", "aperture", "shutter", "iso"]
+EXIF_LABELS = {
+    "camera": "Camera",
+    "lens": "Lens",
+    "film": "Film",
+    "aperture": "Aperture",
+    "shutter": "Shutter",
+    "iso": "ISO",
+}
+
+# Where the sun stood. Kept in step with site-utils.js so a page written out
+# here says the same thing the front page says about the same photograph.
+SEASONS = ["winter", "spring", "summer", "autumn"]
+LIGHTS = ["blue", "golden", "day", "night"]
+LIGHT_LABELS = {"blue": "Blue hour", "golden": "Golden hour", "day": "Daylight", "night": "Night"}
+SUN = {
+    "spring": (6.2, 19.0),
+    "summer": (5.4, 19.6),
+    "autumn": (6.6, 18.0),
+    "winter": (7.6, 17.4),
+    "": (6.5, 18.5),
+}
+GOLDEN_HOURS = 1.0
+BLUE_HOURS = 0.6
+
+
+def season_of(date: str) -> str:
+    match = re.match(r"^\d{4}-(\d{2})", date or "")
+    if match is None:
+        return ""
+    month = int(match.group(1))
+    return SEASONS[(month % 12) // 3] if 1 <= month <= 12 else ""
+
+
+def light_of(time: str, season: str) -> str:
+    match = re.fullmatch(r"(\d{2}):(\d{2})", time or "")
+    if match is None:
+        return ""
+    hour = int(match.group(1)) + int(match.group(2)) / 60
+    up, down = SUN.get(season, SUN[""])
+    if up <= hour <= up + GOLDEN_HOURS or down - GOLDEN_HOURS <= hour <= down:
+        return "golden"
+    if up - BLUE_HOURS <= hour < up or down < hour <= down + BLUE_HOURS:
+        return "blue"
+    return "day" if up < hour < down else "night"
 
 MERGE_SOURCES = [
     ("photos.merge.json", "photos.json", "photos"),
@@ -98,12 +153,60 @@ def main() -> None:
     validate_posts_index(posts_index, series_ids)
     validate_post_files(posts_index)
     build_release()
-    write_post_pages(site, posts_index)
+    cards = write_share_cards(posts_index)
+    write_post_pages(site, posts_index, cards)
     write_series_pages(site, posts_index)
     write_archive_pages(site, posts_index)
+    places = write_place_pages(site)
     write_search_index(posts_index)
-    write_discovery_files(site, posts_index)
+    write_discovery_files(site, posts_index, places, cards)
     print(f"release-ok: {OUT}")
+
+
+# A link pasted into a chat window is shown as a card 1200 by 630, and a
+# photograph dropped into that shape is cropped by whoever is showing it. So
+# the card is made here: the whole frame, uncropped, on the same white paper
+# the site is printed on. The photographs keep their own colour — the rule has
+# always been that the chrome is grey and the pictures are not.
+CARD_SIZE = (1200, 630)
+CARD_MARGIN = 60
+
+
+def write_share_cards(posts_index: dict[str, Any]) -> dict[str, str]:
+    wanted: dict[str, str] = {}
+    photos = read_json(ROOT / "photos.json").get("photos", [])
+    first = next((str(photo["src"]) for photo in photos if isinstance(photo, dict) and photo.get("src")), "")
+    if first:
+        wanted["index"] = first
+    for summary in published_posts(posts_index):
+        cover = first_photo(read_json(ROOT / summary["path"]))
+        if cover and not cover.startswith(("http://", "https://")):
+            wanted[summary["id"]] = cover
+    if not wanted:
+        return {}
+
+    try:
+        from PIL import Image
+    except ImportError:
+        print("card-skip: no pillow, share previews fall back to the photograph itself")
+        return {}
+
+    (OUT / "cards").mkdir(parents=True, exist_ok=True)
+    made: dict[str, str] = {}
+    for name, src in wanted.items():
+        source = safe_local_path(src, f"share card {name}")
+        if not source.exists():
+            continue
+        with Image.open(source) as frame:
+            card = Image.new("RGB", CARD_SIZE, (255, 255, 255))
+            plate = frame.convert("RGB")
+            plate.thumbnail((CARD_SIZE[0] - CARD_MARGIN * 2, CARD_SIZE[1] - CARD_MARGIN * 2), Image.LANCZOS)
+            card.paste(plate, ((CARD_SIZE[0] - plate.width) // 2, (CARD_SIZE[1] - plate.height) // 2))
+            card.save(OUT / "cards" / f"{name}.png", "PNG", optimize=True)
+        made[name] = f"cards/{name}.png"
+    if made:
+        print(f"cards: {len(made)} share preview(s)")
+    return made
 
 
 def validate_series_manifest(manifest: dict[str, Any]) -> set[str]:
@@ -165,6 +268,7 @@ def validate_photos_manifest(manifest: dict[str, Any]) -> None:
         if photo_id in ids:
             raise ReleaseError(f"Duplicate photo id: {photo_id}")
         ids.add(photo_id)
+        validate_capture_data(photo, f"photos[{index}]")
         src = required_text(photo, "src", f"photos[{index}]")
         if src.startswith("http://") or src.startswith("https://"):
             continue
@@ -216,8 +320,41 @@ def validate_post_files(index: dict[str, Any]) -> None:
         blocks = data.get("blocks")
         if not isinstance(blocks, list) or len(blocks) == 0:
             raise ReleaseError(f"Published post needs blocks: {post['path']}")
+        validate_soundtrack(data.get("soundtrack"), post["path"])
         for block_index, block in enumerate(blocks):
             validate_block(block, f"{post['path']} blocks[{block_index}]")
+
+
+# The address is checked here so a bad paste is caught before it is published
+# rather than showing a reader an empty frame.
+def validate_soundtrack(value: Any, location: str) -> None:
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        raise ReleaseError(f"{location} soundtrack must be an object")
+    url = required_text(value, "url", f"{location} soundtrack")
+    if youtube_id(url) == "":
+        raise ReleaseError(f"{location} soundtrack url is not a YouTube address: {url}")
+    label = value.get("label")
+    if label is not None and not isinstance(label, str):
+        raise ReleaseError(f"{location} soundtrack label must be a string")
+
+
+def youtube_id(value: str) -> str:
+    hosts = {"youtu.be", "youtube.com", "m.youtube.com", "youtube-nocookie.com"}
+    parsed = urlparse(value)
+    host = parsed.netloc.lower().removeprefix("www.")
+    if host not in hosts:
+        return ""
+    if host == "youtu.be":
+        candidate = parsed.path.lstrip("/")
+    elif parsed.path == "/watch":
+        candidate = parse_qs(parsed.query).get("v", [""])[0]
+    elif parsed.path.startswith(("/embed/", "/shorts/", "/live/")):
+        candidate = parsed.path.split("/")[2] if len(parsed.path.split("/")) > 2 else ""
+    else:
+        candidate = ""
+    return candidate if re.fullmatch(r"[\w-]{11}", candidate) else ""
 
 
 def validate_block(block: Any, location: str) -> None:
@@ -257,8 +394,45 @@ def validate_photo_object(value: Any, location: str) -> None:
         raise ReleaseError(f"{location} photo must be an object")
     src = required_text(value, "src", location)
     required_text(value, "alt", location)
+    validate_capture_data(value, location)
     if not src.startswith(("http://", "https://")) and not safe_local_path(src, location).exists():
         raise ReleaseError(f"Missing post photo asset: {src}")
+
+
+# A frame may say when it was made and what made it. Both are optional; what is
+# written down has to be written down in a shape the pages can read back.
+def validate_capture_data(photo: dict[str, Any], location: str) -> None:
+    date = photo.get("date")
+    if date is not None:
+        if not isinstance(date, str) or re.fullmatch(r"\d{4}(-\d{2}(-\d{2})?)?", date) is None:
+            raise ReleaseError(f"{location} date must be YYYY, YYYY-MM or YYYY-MM-DD: {date}")
+    time = photo.get("time")
+    if time is not None:
+        if not isinstance(time, str) or re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", time) is None:
+            raise ReleaseError(f"{location} time must be HH:MM on a 24-hour clock: {time}")
+    light = photo.get("light")
+    if light is not None and light not in LIGHTS:
+        raise ReleaseError(f"{location} light must be one of {', '.join(LIGHTS)}: {light}")
+    fmt = photo.get("format")
+    if fmt is not None and not isinstance(fmt, str):
+        raise ReleaseError(f"{location} format must be a string")
+    subjects = photo.get("subjects")
+    if subjects is not None:
+        if not isinstance(subjects, list):
+            raise ReleaseError(f"{location} subjects must be an array of strings")
+        for subject in subjects:
+            if not isinstance(subject, str) or not subject.strip():
+                raise ReleaseError(f"{location} every subject must be a non-empty string")
+    exif = photo.get("exif")
+    if exif is None:
+        return
+    if not isinstance(exif, dict):
+        raise ReleaseError(f"{location} exif must be an object")
+    for key, value in exif.items():
+        if key not in EXIF_FIELDS:
+            raise ReleaseError(f"{location} unknown exif field: {key} (use {', '.join(EXIF_FIELDS)})")
+        if not isinstance(value, str):
+            raise ReleaseError(f"{location} exif {key} must be a string")
 
 
 def required_text(data: dict[str, Any], key: str, location: str) -> str:
@@ -297,14 +471,14 @@ def build_release() -> None:
 # address for the whole site. Posts and series are written as pages of their
 # own so each can be found, linked and shared on its own.
 
-def write_post_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
+def write_post_pages(site: dict[str, Any], posts_index: dict[str, Any], cards: dict[str, str]) -> None:
     posts = published_posts(posts_index)
     titles = series_titles()
     for position, summary in enumerate(posts):
         post = read_json(ROOT / summary["path"])
         newer = posts[position - 1] if position > 0 else None
         older = posts[position + 1] if position + 1 < len(posts) else None
-        write_page(OUT / "posts" / summary["id"], post_page(site, summary, post, titles, newer, older, posts))
+        write_page(OUT / "posts" / summary["id"], post_page(site, summary, post, titles, newer, older, posts, cards))
     if posts:
         print(f"posts: {len(posts)} page(s)")
 
@@ -335,6 +509,55 @@ def write_archive_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> No
         write_page(OUT / "archive" / year, archive_page(site, year, members))
     if years:
         print(f"archive: {len(years)} year(s)")
+
+
+# A travelling archive is read by where it was made as much as by when. The
+# index on the front page narrows the gallery in place; these pages give each
+# city an address of its own to send, and something for a crawler to find.
+def write_place_pages(site: dict[str, Any]) -> dict[str, str]:
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for photo in read_json(ROOT / "photos.json").get("photos", []):
+        if not isinstance(photo, dict):
+            continue
+        place = str(photo.get("place", "")).strip()
+        if place and photo.get("src"):
+            groups.setdefault(place, []).append(photo)
+
+    places: dict[str, str] = {}
+    for place in sorted(groups):
+        key = place_slug(place)
+        if key in places:
+            raise ReleaseError(f"Two places share one address ({key}): {places[key]} and {place}")
+        places[key] = place
+        write_page(OUT / "places" / key, place_page(site, place, groups[place]))
+    if places:
+        print(f"places: {len(places)} page(s)")
+    return places
+
+
+def place_slug(value: str) -> str:
+    key = re.sub(r"[\W_]+", "-", value.lower()).strip("-")
+    if not key:
+        raise ReleaseError(f"Place name gives no address: {value}")
+    return key
+
+
+def place_page(site, place, members) -> str:
+    base_url = site["baseUrl"].rstrip("/")
+    url = f"{base_url}/places/{quote(place_slug(place))}/" if base_url else ""
+    cover = next((str(photo["src"]) for photo in members if photo.get("src")), "")
+    main = [
+        '<div class="place-page">',
+        '  <a class="back-link" href="/#gallery" data-i18n="places.back">Back to the gallery</a>',
+        f"  <h1>{escape(place)}</h1>",
+        '  <div class="photo-grid">',
+    ]
+    for photo in members:
+        main += [f"    {line}" for line in figure_html(photo, "")]
+    main += ["  </div>", "</div>"]
+    return page(site, title=place, description=place, url=url,
+                image=f"{base_url}/{cover}" if cover and base_url else "",
+                kind="website", head_extra=[], main=main)
 
 
 def archive_page(site, year, members) -> str:
@@ -388,11 +611,14 @@ def write_search_index(posts_index: dict[str, Any]) -> None:
     for photo in read_json(ROOT / "photos.json").get("photos", []):
         if not isinstance(photo, dict) or not photo.get("src"):
             continue
+        exif = photo.get("exif") if isinstance(photo.get("exif"), dict) else {}
+        subjects = photo.get("subjects") if isinstance(photo.get("subjects"), list) else []
         photos.append({
             "id": str(photo.get("id", "")),
             "words": " ".join(
-                str(photo.get(field, ""))
-                for field in ("title", "alt", "place", "year", "details")
+                [str(photo.get(field, "")) for field in ("title", "alt", "place", "year", "date", "format", "details")]
+                + [str(subject) for subject in subjects]
+                + [str(exif.get(field, "")) for field in EXIF_FIELDS]
             ).strip(),
         })
 
@@ -443,12 +669,16 @@ def author_of(site: dict[str, Any]) -> str:
 
 
 def page(site: dict[str, Any], *, title: str, description: str, url: str,
-         image: str, kind: str, head_extra: list[str], main: list[str]) -> str:
+         image: str, kind: str, head_extra: list[str], main: list[str],
+         image_size: tuple[int, int] | None = None) -> str:
     head = [
         '<meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        # frame-src is here only so a reader who presses play on a post's sound
+        # track gets it. Nothing loads from that host until they do.
         "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'self'; "
-        "style-src 'self'; img-src 'self' data: https:; connect-src 'self'; base-uri 'none'; form-action 'none'\">",
+        "style-src 'self'; img-src 'self' data: https:; connect-src 'self'; "
+        "frame-src https://www.youtube-nocookie.com; base-uri 'none'; form-action 'none'\">",
         '<meta name="referrer" content="strict-origin-when-cross-origin">',
         '<meta name="color-scheme" content="light">',
         f"<title>{escape(title)} — {escape(site['title'])}</title>",
@@ -462,6 +692,9 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         head += [f'<link rel="canonical" href="{escape(url)}">', f'<meta property="og:url" content="{escape(url)}">']
     if image:
         head.append(f'<meta property="og:image" content="{escape(image)}">')
+    if image_size is not None:
+        head.append(f'<meta property="og:image:width" content="{image_size[0]}">')
+        head.append(f'<meta property="og:image:height" content="{image_size[1]}">')
     head += head_extra
     head += [
         '<link rel="stylesheet" href="/styles.css">',
@@ -505,6 +738,7 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         '<dialog id="lightbox" class="lightbox" aria-label="Image viewer" data-i18n-attrs="aria-label:lb.aria">',
         '  <div class="lightbox-bar">',
         '    <p id="lightbox-counter" class="lightbox-counter"></p>',
+        '    <button type="button" id="lightbox-mono" class="lightbox-button">In black and white</button>',
         '    <button type="button" id="lightbox-close" class="lightbox-button" data-i18n="lb.close">Close</button>',
         "  </div>",
         '  <figure class="lightbox-stage">',
@@ -512,6 +746,7 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
         "    <figcaption>",
         '      <p id="lightbox-caption" class="caption-main"></p>',
         '      <p id="lightbox-meta" class="caption-meta"></p>',
+        '      <div id="lightbox-notes"></div>',
         "    </figcaption>",
         "  </figure>",
         '  <div class="lightbox-nav">',
@@ -529,12 +764,13 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
     )
 
 
-def post_page(site, summary, post, titles, newer, older, siblings) -> str:
+def post_page(site, summary, post, titles, newer, older, siblings, cards) -> str:
     base_url = site["baseUrl"].rstrip("/")
     url = post_url(base_url, summary["id"]) if base_url else ""
     series_name = titles.get(summary.get("series", ""), "")
-    cover = first_photo(post)
-    image = f"{base_url}/{cover}" if cover and base_url else ""
+    card = cards.get(summary["id"], "")
+    cover = card or first_photo(post)
+    image = f"{base_url}/{quote(cover)}" if cover and base_url else ""
     date = summary.get("date", "")
 
     head_extra = []
@@ -560,12 +796,43 @@ def post_page(site, summary, post, titles, newer, older, siblings) -> str:
         f"  <h1>{escape(summary['title'])}</h1>",
         f'  <p class="post-lead">{escape(summary.get("excerpt", ""))}</p>',
     ]
+    main += [f"  {line}" for line in sound_slot_html(post)]
     main += [f"  {line}" for line in blocks_html(post.get("blocks", []))]
     main.append("</article>")
+    main += post_tools_html(summary, date, url)
     main += related_html(summary, siblings, titles)
     main += post_nav_html(older, newer)
     return page(site, title=summary["title"], description=summary.get("excerpt", ""), url=url,
-                image=image, kind="article", head_extra=head_extra, main=main)
+                image=image, image_size=CARD_SIZE if card else None,
+                kind="article", head_extra=head_extra, main=main)
+
+
+# One quiet row under the post: how to read it, how to fold it into paper, and
+# how to send it. Every control is filled in by script, so a page read without
+# any leaves an empty row rather than a broken one.
+def post_tools_html(summary: dict[str, Any], date: str, url: str) -> list[str]:
+    return [
+        '<div class="post-tools">',
+        '  <div class="story-slot"></div>',
+        *[f"  {line}" for line in zine_slot_html("post", summary["id"], summary["title"], extra={
+            "zine-lead": summary.get("excerpt", ""),
+            "zine-date": date,
+            "zine-path": summary["path"],
+        })],
+        f'  <div class="share-slot" data-share-url={quoteattr(url)} data-share-title={quoteattr(summary["title"])}></div>',
+        "</div>",
+    ]
+
+
+def sound_slot_html(post: dict[str, Any]) -> list[str]:
+    soundtrack = post.get("soundtrack")
+    if not isinstance(soundtrack, dict) or not isinstance(soundtrack.get("url"), str):
+        return []
+    label = str(soundtrack.get("label", ""))
+    return [
+        f'<div class="sound-slot" data-sound-url={quoteattr(soundtrack["url"])}'
+        f" data-sound-label={quoteattr(label)}></div>"
+    ]
 
 
 # The end of a post is where a reader decides whether to stay. Posts from the
@@ -625,8 +892,22 @@ def series_page(site, entry, members) -> str:
         ]
     main.append("  </div>")
     main.append("</article>")
+    main += [
+        '<div class="post-tools">',
+        *[f"  {line}" for line in zine_slot_html("series", str(entry["id"]), str(entry.get("title", "")))],
+        f'  <div class="share-slot" data-share-url={quoteattr(url)} data-share-title={quoteattr(str(entry.get("title", "")))}></div>',
+        "</div>",
+    ]
     return page(site, title=str(entry.get("title", "")), description=description, url=url,
                 image="", kind="website", head_extra=[], main=main)
+
+
+# The button is written here; zine.js finds the slot and fills it in, so a page
+# read without script simply has nothing where the button would be.
+def zine_slot_html(kind: str, zine_id: str, title: str, extra: dict[str, str] | None = None) -> list[str]:
+    attributes = {"zine": kind, "zine-id": zine_id, "zine-title": title, **(extra or {})}
+    written = " ".join(f"data-{name}={quoteattr(str(value))}" for name, value in attributes.items() if value)
+    return [f'<div class="zine-slot" {written}></div>']
 
 
 def article_ld(site, summary, url, image, series_name) -> str:
@@ -723,10 +1004,30 @@ def figure_html(photo: Any, comment: str) -> list[str]:
         f'    <p class="caption-main">{escape(caption)}</p>',
         f'    <p class="caption-meta">{escape(details)}</p>',
     ]
+    lines += [f"    {line}" for line in notes_html(photo)]
     if comment:
         lines.append(f'    <p class="photo-comment">{escape(comment)}</p>')
     lines += ["  </figcaption>", "</figure>"]
     return lines
+
+
+def notes_html(photo: dict[str, Any]) -> list[str]:
+    exif = photo.get("exif") if isinstance(photo.get("exif"), dict) else {}
+    rows: list[str] = []
+    for field in EXIF_FIELDS:
+        value = exif.get(field)
+        if isinstance(value, str) and value.strip():
+            rows.append(f'  <dt data-i18n="notes.{field}">{EXIF_LABELS[field]}</dt>')
+            rows.append(f"  <dd>{escape(value.strip())}</dd>")
+    time = str(photo.get("time", "")).strip()
+    if time:
+        rows.append('  <dt data-i18n="notes.time">Hour</dt>')
+        rows.append(f"  <dd>{escape(time)}</dd>")
+    light = str(photo.get("light", "")).strip() or light_of(time, season_of(str(photo.get("date", ""))))
+    if light in LIGHTS:
+        rows.append('  <dt data-i18n="notes.light">Light</dt>')
+        rows.append(f'  <dd data-i18n="light.{light}">{LIGHT_LABELS[light]}</dd>')
+    return ['<dl class="darkroom-notes">'] + rows + ["</dl>"] if rows else []
 
 
 def post_nav_html(older: Any, newer: Any) -> list[str]:
@@ -748,12 +1049,13 @@ def post_nav_html(older: Any, newer: Any) -> list[str]:
     return lines
 
 
-def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
+def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any],
+                          places: dict[str, str], cards: dict[str, str]) -> None:
     base_url = site["baseUrl"].rstrip("/")
     robots = ["User-agent: *", "Allow: /", "Disallow: /admin/"]
     if base_url:
         robots.append(f"Sitemap: {base_url}/sitemap.xml")
-        (OUT / "sitemap.xml").write_text(sitemap_xml(base_url, posts_index), encoding="utf-8")
+        (OUT / "sitemap.xml").write_text(sitemap_xml(base_url, posts_index, places), encoding="utf-8")
         (OUT / "feed.xml").write_text(feed_xml(site, base_url, posts_index), encoding="utf-8")
         (OUT / "rss.xml").write_text(rss_xml(site, base_url, posts_index), encoding="utf-8")
     else:
@@ -761,7 +1063,7 @@ def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> 
     for extra in site.get("sitemaps", []):
         robots.append(f"Sitemap: {extra}")
     (OUT / "robots.txt").write_text("\n".join(robots) + "\n", encoding="utf-8")
-    write_home_card(site)
+    write_home_card(site, cards)
     well_known = OUT / ".well-known"
     well_known.mkdir(exist_ok=True)
     expires = (datetime.now(timezone.utc) + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -771,24 +1073,26 @@ def write_discovery_files(site: dict[str, Any], posts_index: dict[str, Any]) -> 
 
 # index.html is written by hand and copied as it is, so the picture a share
 # preview needs is put in here, where the photograph list is known.
-def write_home_card(site: dict[str, Any]) -> None:
+def write_home_card(site: dict[str, Any], cards: dict[str, str]) -> None:
     base_url = site["baseUrl"].rstrip("/")
     photos = read_json(ROOT / "photos.json").get("photos", [])
-    first = next((photo["src"] for photo in photos if isinstance(photo, dict) and photo.get("src")), "")
+    first = cards.get("index") or next(
+        (photo["src"] for photo in photos if isinstance(photo, dict) and photo.get("src")), "")
     if not base_url or not first:
         return
     target = OUT / "index.html"
     html = target.read_text(encoding="utf-8")
     if "og:image" in html:
         return
-    card = (
-        f'    <meta property="og:image" content="{escape(base_url)}/{escape(first)}">\n'
-        '    <meta name="twitter:card" content="summary_large_image">\n'
-    )
-    target.write_text(html.replace("  </head>", card + "  </head>", 1), encoding="utf-8")
+    lines = [f'    <meta property="og:image" content="{escape(base_url)}/{escape(quote(first))}">']
+    if "index" in cards:
+        lines.append(f'    <meta property="og:image:width" content="{CARD_SIZE[0]}">')
+        lines.append(f'    <meta property="og:image:height" content="{CARD_SIZE[1]}">')
+    lines.append('    <meta name="twitter:card" content="summary_large_image">')
+    target.write_text(html.replace("  </head>", "\n".join(lines) + "\n  </head>", 1), encoding="utf-8")
 
 
-def sitemap_xml(base_url: str, posts_index: dict[str, Any]) -> str:
+def sitemap_xml(base_url: str, posts_index: dict[str, Any], places: dict[str, str]) -> str:
     posts = published_posts(posts_index)
     newest = next((post["date"] for post in posts if post.get("date")), "")
     entries = [(f"{base_url}/", newest)]
@@ -806,6 +1110,7 @@ def sitemap_xml(base_url: str, posts_index: dict[str, Any]) -> str:
         if re.fullmatch(r"\d{4}", year) and year not in years:
             years[year] = post.get("date", "")
     entries += [(f"{base_url}/archive/{year}/", date) for year, date in years.items()]
+    entries += [(f"{base_url}/places/{quote(key)}/", "") for key in places]
 
     body = ""
     for loc, date in entries:

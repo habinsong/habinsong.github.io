@@ -110,6 +110,170 @@ figcaption {
   line-height: 1.6;
 }
 
+/* ── darkroom notes ─────────────────────────────────────── */
+/* What the frame was made with, set as a note rather than a sentence: term on
+   the left, figure on the right, monospaced so the columns line up down the
+   page the way they would in a working book. */
+
+.darkroom-notes {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1px var(--space-4);
+  max-width: 420px;
+  margin: var(--space-3) 0 0;
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.darkroom-notes dt {
+  color: var(--quiet);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.darkroom-notes dd {
+  margin: 0;
+  color: var(--muted);
+}
+
+.lightbox .darkroom-notes {
+  margin-inline: auto;
+  text-align: left;
+}
+
+/* ── place and time indexes ─────────────────────────────── */
+/* No map and no calendar — just the words, which is all a reader needs to
+   pick a city or a season out of an archive. */
+
+.gallery-index {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.index-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-5);
+}
+
+.index-row[hidden] {
+  display: none;
+}
+
+.index-label {
+  flex: 0 0 88px;
+  margin: 0;
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.index-items {
+  display: flex;
+  flex: 1 1 320px;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+}
+
+.index-choice {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  padding: 0 0 2px;
+}
+
+.index-choice:hover {
+  color: var(--ink);
+}
+
+.index-choice[aria-pressed="true"] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.index-count {
+  margin-left: var(--space-1);
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.narrow-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-8);
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--space-4);
+  color: var(--quiet);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+}
+
+.narrow-bar:empty {
+  display: none;
+}
+
+.narrow-note {
+  margin: 0;
+  color: var(--ink);
+}
+
+.narrow-clear {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  padding: 0 0 2px;
+}
+
+.narrow-clear:hover,
+.narrow-page:hover {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.narrow-page {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+}
+
+/* a city's own page: the same wall of photographs, already narrowed */
+.place-page {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-8);
+}
+
+.place-page h1 {
+  margin: var(--space-4) 0 0;
+}
+
+.place-page .photo-grid {
+  margin-top: var(--space-12);
+}
+
 .empty-state {
   grid-column: 1 / -1;
   padding: var(--space-2) 0 var(--space-8);
@@ -125,21 +289,26 @@ figcaption {
 /* ── gallery views ──────────────────────────────────────── */
 
 /* one frame to a row, as large as the column allows */
-.photo-grid.is-large .photo-card,
-.photo-grid.is-large .photo-card:nth-child(5n + 1) {
+.photo-grid.is-essay .photo-card,
+.photo-grid.is-essay .photo-card:nth-child(5n + 1) {
   grid-column: 1 / -1;
 }
 
-/* four to a row, captions off — for looking across a body of work */
-.photo-grid.is-dense {
+/* four to a row, captions off, every frame in grey — this one is for looking
+   across a body of work rather than at any picture in it */
+.photo-grid.is-index {
   gap: var(--space-6) var(--space-4);
 }
 
-.photo-grid.is-dense .photo-card,
-.photo-grid.is-dense .photo-card:nth-child(5n + 1) {
+.photo-grid.is-index .photo-card,
+.photo-grid.is-index .photo-card:nth-child(5n + 1) {
   grid-column: span 3;
 }
 
-.photo-grid.is-dense figcaption {
+.photo-grid.is-index figcaption {
   display: none;
+}
+
+.photo-grid.is-index .photo-frame img {
+  filter: grayscale(1);
 }

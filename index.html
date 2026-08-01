@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+    <!-- frame-src is here only so a reader who presses play on a post's sound track gets it. Nothing loads from that host until they do. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; frame-src https://www.youtube-nocookie.com; base-uri 'none'; form-action 'none'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="color-scheme" content="light">
     <meta name="naver-site-verification" content="91f3709d2fa92abccb489b6a0f7578ded92d8d5f">
@@ -86,6 +87,9 @@
           <button class="filter-button" type="button" data-filter="bw" aria-pressed="false" data-i18n="filter.bw">B/W</button>
         </div>
 
+        <div id="gallery-index" class="gallery-index"></div>
+        <div id="gallery-narrow" class="narrow-bar" aria-live="polite"></div>
+
         <div id="photo-grid" class="photo-grid" aria-live="polite"></div>
         <div id="gallery-more"></div>
       </section>
@@ -116,6 +120,7 @@
     <dialog id="lightbox" class="lightbox" aria-label="Image viewer" data-i18n-attrs="aria-label:lb.aria">
       <div class="lightbox-bar">
         <p id="lightbox-counter" class="lightbox-counter"></p>
+        <button type="button" id="lightbox-mono" class="lightbox-button">In black and white</button>
         <button type="button" id="lightbox-close" class="lightbox-button" data-i18n="lb.close">Close</button>
       </div>
       <figure class="lightbox-stage">
@@ -123,6 +128,7 @@
         <figcaption>
           <p id="lightbox-caption" class="caption-main"></p>
           <p id="lightbox-meta" class="caption-meta"></p>
+          <div id="lightbox-notes"></div>
         </figcaption>
       </figure>
       <div class="lightbox-nav">

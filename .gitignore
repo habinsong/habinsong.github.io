@@ -10,6 +10,7 @@
 .claude/
 .omo/
 .playwright-mcp/
+__pycache__/
 
 # 내 컴퓨터에만 두는 문서
 /DESIGN.md
