@@ -134,7 +134,10 @@ export function archiveYear(year, posts, photoCount, seriesTitleOf) {
   const block = document.createElement("section");
   block.className = "archive-year";
   const heading = document.createElement("h3");
-  heading.textContent = year;
+  const yearLink = document.createElement("a");
+  yearLink.href = `/archive/${encodeURIComponent(year)}/`;
+  yearLink.textContent = year;
+  heading.append(yearLink);
   const body = document.createElement("div");
   body.className = "archive-body";
   const counts = [];
@@ -233,6 +236,7 @@ export function collectPostPhotos(post) {
 
 export function lightboxItem(photo) {
   return {
+    id: photo.id,
     src: photo.src,
     alt: photo.alt,
     caption: captionText(photo),

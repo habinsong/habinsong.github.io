@@ -14,6 +14,7 @@ const items = frames.map((frame) => {
   const card = frame.closest(".photo-card");
   const image = frame.querySelector("img");
   return {
+    id: card?.dataset.photoId ?? "",
     src: image?.getAttribute("src") ?? "",
     alt: image?.getAttribute("alt") ?? "",
     caption: card?.querySelector(".caption-main")?.textContent ?? "",

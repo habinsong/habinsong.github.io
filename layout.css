@@ -334,3 +334,83 @@ h2 {
 .pager-step:last-child {
   margin-left: auto;
 }
+
+/* ── view menu ──────────────────────────────────────────── */
+/* Each list can be read more than one way. The heading carries the switch. */
+
+.head-tools {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-6);
+}
+
+.view-menu {
+  position: relative;
+}
+
+.view-button {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  padding: 0 0 var(--space-1);
+  text-transform: uppercase;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.view-button:hover,
+.view-button[aria-expanded="true"] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+.view-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-2));
+  z-index: 20;
+  margin: 0;
+  padding: var(--space-2) 0;
+  list-style: none;
+  min-width: 160px;
+  border: 1px solid var(--line);
+  background: var(--paper, #fff);
+}
+
+.view-list[hidden] {
+  display: none;
+}
+
+.view-choice {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  width: 100%;
+  transition: color 0.2s ease;
+}
+
+.view-choice:hover {
+  color: var(--ink);
+}
+
+.view-choice[aria-checked="true"] {
+  color: var(--ink);
+}
+
+.view-choice[aria-checked="true"]::before {
+  content: "· ";
+}

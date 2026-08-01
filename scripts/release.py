@@ -33,6 +33,7 @@ PUBLIC_FILES = [
     "site-data.js",
     "site-render.js",
     "post-page.js",
+    "view-menu.js",
     "photos.json",
     "series.json",
     "site.json",
@@ -98,6 +99,7 @@ def main() -> None:
     build_release()
     write_post_pages(site, posts_index)
     write_series_pages(site, posts_index)
+    write_archive_pages(site, posts_index)
     write_discovery_files(site, posts_index)
     print(f"release-ok: {OUT}")
 
@@ -300,7 +302,7 @@ def write_post_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
         post = read_json(ROOT / summary["path"])
         newer = posts[position - 1] if position > 0 else None
         older = posts[position + 1] if position + 1 < len(posts) else None
-        write_page(OUT / "posts" / summary["id"], post_page(site, summary, post, titles, newer, older))
+        write_page(OUT / "posts" / summary["id"], post_page(site, summary, post, titles, newer, older, posts))
     if posts:
         print(f"posts: {len(posts)} page(s)")
 
@@ -318,6 +320,44 @@ def write_series_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> Non
         count += 1
     if count:
         print(f"series: {count} page(s)")
+
+
+def write_archive_pages(site: dict[str, Any], posts_index: dict[str, Any]) -> None:
+    posts = published_posts(posts_index)
+    years: dict[str, list[dict[str, Any]]] = {}
+    for post in posts:
+        year = str(post.get("date", ""))[:4]
+        if re.fullmatch(r"\d{4}", year):
+            years.setdefault(year, []).append(post)
+    for year, members in years.items():
+        write_page(OUT / "archive" / year, archive_page(site, year, members))
+    if years:
+        print(f"archive: {len(years)} year(s)")
+
+
+def archive_page(site, year, members) -> str:
+    base_url = site["baseUrl"].rstrip("/")
+    url = f"{base_url}/archive/{year}/" if base_url else ""
+    titles = series_titles()
+    main = [
+        '<article class="post-article">',
+        '  <a class="back-link" href="/#archive" data-i18n="archive.back">Back to archive</a>',
+        f"  <h1>{escape(year)}</h1>",
+        '  <div class="posts-list">',
+    ]
+    for post in members:
+        parts = [post.get("date", ""), titles.get(post.get("series", ""), "")]
+        parts += [str(tag) for tag in post.get("tags", []) if tag]
+        main += [
+            '    <article class="post-card">',
+            f'      <p class="post-meta">{escape(" · ".join(part for part in parts if part))}</p>',
+            f'      <h3><a class="post-link" href="/posts/{quote(post["id"])}/">{escape(post["title"])}</a></h3>',
+            f'      <p class="post-excerpt">{escape(post.get("excerpt", ""))}</p>',
+            "    </article>",
+        ]
+    main += ["  </div>", "</article>"]
+    return page(site, title=year, description=f"{year}", url=url, image="",
+                kind="website", head_extra=[], main=main)
 
 
 def write_page(directory: Path, html: str) -> None:
@@ -419,7 +459,7 @@ def page(site: dict[str, Any], *, title: str, description: str, url: str,
     )
 
 
-def post_page(site, summary, post, titles, newer, older) -> str:
+def post_page(site, summary, post, titles, newer, older, siblings) -> str:
     base_url = site["baseUrl"].rstrip("/")
     url = post_url(base_url, summary["id"]) if base_url else ""
     series_name = titles.get(summary.get("series", ""), "")
@@ -442,9 +482,43 @@ def post_page(site, summary, post, titles, newer, older) -> str:
     ]
     main += [f"  {line}" for line in blocks_html(post.get("blocks", []))]
     main.append("</article>")
+    main += related_html(summary, siblings, titles)
     main += post_nav_html(older, newer)
     return page(site, title=summary["title"], description=summary.get("excerpt", ""), url=url,
                 image=image, kind="article", head_extra=head_extra, main=main)
+
+
+# The end of a post is where a reader decides whether to stay. Posts from the
+# same series come first, then ones that share a tag.
+def related_html(summary, siblings, titles) -> list[str]:
+    tags = {str(tag) for tag in summary.get("tags", [])}
+    scored = []
+    for other in siblings:
+        if other["id"] == summary["id"]:
+            continue
+        shared = len(tags & {str(tag) for tag in other.get("tags", [])})
+        same_series = 1 if summary.get("series") and other.get("series") == summary["series"] else 0
+        if same_series or shared:
+            scored.append((same_series, shared, other))
+    if not scored:
+        return []
+    scored.sort(key=lambda row: (row[0], row[1], row[2].get("date", "")), reverse=True)
+
+    lines = [
+        '<section class="related">',
+        '  <h2 data-i18n="post.related">Related posts</h2>',
+        '  <div class="posts-list">',
+    ]
+    for _, _, other in scored[:4]:
+        parts = [other.get("date", ""), titles.get(other.get("series", ""), "")]
+        lines += [
+            '    <article class="post-card">',
+            f'      <p class="post-meta">{escape(" · ".join(part for part in parts if part))}</p>',
+            f'      <h3><a class="post-link" href="/posts/{quote(other["id"])}/">{escape(other["title"])}</a></h3>',
+            "    </article>",
+        ]
+    lines += ["  </div>", "</section>"]
+    return lines
 
 
 def series_page(site, entry, members) -> str:
@@ -559,7 +633,8 @@ def figure_html(photo: Any, comment: str) -> list[str]:
     )
     details = str(photo.get("details", ""))
     lines = [
-        f'<figure class="photo-card" data-medium="{escape(str(photo.get("medium", "digital")))}"'
+        f'<figure class="photo-card" data-photo-id="{escape(str(photo.get("id", "")))}"'
+        f' data-medium="{escape(str(photo.get("medium", "digital")))}"'
         f' data-tone="{escape(str(photo.get("tone", "color")))}">',
         f'  <button type="button" class="photo-frame" style="--ratio: {width} / {height}">',
         f'    <img src="/{escape(src)}" alt={quoteattr(alt)} loading="lazy" decoding="async">',
@@ -644,6 +719,13 @@ def sitemap_xml(base_url: str, posts_index: dict[str, Any]) -> str:
         members = [post for post in posts if post.get("series") == series_id]
         if members:
             entries.append((f"{base_url}/series/{quote(series_id)}/", members[0].get("date", "")))
+
+    years: dict[str, str] = {}
+    for post in posts:
+        year = str(post.get("date", ""))[:4]
+        if re.fullmatch(r"\d{4}", year) and year not in years:
+            years[year] = post.get("date", "")
+    entries += [(f"{base_url}/archive/{year}/", date) for year, date in years.items()]
 
     body = ""
     for loc, date in entries:

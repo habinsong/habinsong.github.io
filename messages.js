@@ -359,6 +359,27 @@ export const SITE_MESSAGES = {
     ja: "デジタルとフィルムで写真を撮っています。お問い合わせはメールでお願いします。",
     zh: "我用数码与胶片拍摄。如有事宜，请发邮件联系。",
   },
+  "post.related": {
+    ko: "함께 보면 좋은 글", en: "Related posts", ja: "あわせて読む", zh: "相关文章",
+  },
+  "archive.back": {
+    ko: "아카이브로", en: "Back to archive", ja: "アーカイブへ", zh: "返回归档",
+  },
+  "view.posts.cards": {
+    ko: "카드로 보기", en: "Cards", ja: "カード表示", zh: "卡片视图",
+  },
+  "view.posts.list": {
+    ko: "목록으로 보기", en: "List", ja: "リスト表示", zh: "列表视图",
+  },
+  "view.gallery.grid": {
+    ko: "기본 격자", en: "Grid", ja: "標準グリッド", zh: "默认网格",
+  },
+  "view.gallery.large": {
+    ko: "크게 보기", en: "Large", ja: "大きく表示", zh: "大图",
+  },
+  "view.gallery.dense": {
+    ko: "빽빽하게 보기", en: "Dense", ja: "密に表示", zh: "紧凑",
+  },
   "tag.clear": {
     ko: "태그 “{tag}” · 글 {n}편 · 지우기",
     en: "Tag “{tag}” · {n} post(s) · clear",

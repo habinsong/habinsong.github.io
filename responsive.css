@@ -41,6 +41,18 @@
     grid-column: 1 / -1;
   }
 
+  /* two to a row is as dense as a phone can carry */
+  .photo-grid.is-dense .photo-card,
+  .photo-grid.is-dense .photo-card:nth-child(5n + 1) {
+    grid-column: span 6;
+  }
+
+  .posts-list.is-list .post-meta {
+    order: 3;
+    margin-left: 0;
+    width: 100%;
+  }
+
   .inline-gallery {
     grid-template-columns: 1fr;
   }

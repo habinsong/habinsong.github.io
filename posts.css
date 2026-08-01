@@ -241,3 +241,61 @@ blockquote {
   border-color: var(--ink);
   color: var(--ink);
 }
+
+/* ── posts as a list ────────────────────────────────────── */
+/* Date and title on one line, no summary. Twenty entries at a glance. */
+
+.posts-list.is-list {
+  display: block;
+}
+
+.posts-list.is-list .post-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-6);
+  border-top: 1px solid var(--line-soft);
+  padding: var(--space-3) 0;
+}
+
+.posts-list.is-list .post-card:first-child {
+  border-top-color: var(--line);
+}
+
+.posts-list.is-list .post-meta {
+  order: 2;
+  margin: 0;
+  margin-left: auto;
+}
+
+.posts-list.is-list .post-card h3 {
+  order: 1;
+  margin: 0;
+  font-size: clamp(17px, 1.6vw, 21px);
+}
+
+.posts-list.is-list .post-excerpt {
+  display: none;
+}
+
+/* ── related ────────────────────────────────────────────── */
+
+.related {
+  border-top: 1px solid var(--line);
+  margin-top: var(--space-16);
+  padding-top: var(--space-8);
+}
+
+.related h2 {
+  margin: 0 0 var(--space-8);
+  font-size: 12px;
+  font-weight: 300;
+  font-family: var(--font-sans);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+.related .post-card h3 {
+  font-size: clamp(18px, 1.8vw, 24px);
+}

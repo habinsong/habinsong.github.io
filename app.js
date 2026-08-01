@@ -4,6 +4,7 @@ import { SITE_MESSAGES } from "./messages.js";
 import { loadJson, loadPhotos, loadPosts, loadSeries, normalizePostDetail } from "./site-data.js";
 import { archiveYear, collectPostPhotos, lightboxItem, photoCard, postArticle, postCard, postNav, seriesCard } from "./site-render.js";
 import { emptyState, requireElement } from "./site-utils.js";
+import { viewMenu } from "./view-menu.js";
 
 registerMessages(SITE_MESSAGES);
 initI18n();
@@ -31,6 +32,29 @@ const seriesList = requireElement("#series-list");
 const archiveList = requireElement("#archive-list");
 const postsPager = requireElement("#posts-pager");
 const tagBar = requireElement("#posts-tag");
+
+/* Both lists can be read more than one way, so each heading carries a small
+   menu. Cards and the loose grid are the defaults — the ones that suit a
+   handful of entries, which is what the site holds most of the time. */
+const postsView = viewMenu({
+  storageKey: "habin-view-posts",
+  options: [
+    { id: "cards", labelKey: "view.posts.cards" },
+    { id: "list", labelKey: "view.posts.list" },
+  ],
+  onPick: () => renderPosts(),
+});
+const galleryView = viewMenu({
+  storageKey: "habin-view-gallery",
+  options: [
+    { id: "grid", labelKey: "view.gallery.grid" },
+    { id: "large", labelKey: "view.gallery.large" },
+    { id: "dense", labelKey: "view.gallery.dense" },
+  ],
+  onPick: () => renderPhotos(),
+});
+requireElement("#posts-view").append(postsView.node);
+requireElement("#gallery-view").append(galleryView.node);
 const photoMore = requireElement("#gallery-more");
 const postDetail = requireElement("#post-detail");
 const seriesDetail = requireElement("#series-detail");
@@ -69,6 +93,8 @@ window.addEventListener("hashchange", () => {
 });
 
 window.addEventListener("langchange", () => {
+  postsView.relabel();
+  galleryView.relabel();
   renderAll();
   renderRoute({ keepScroll: true });
 });
@@ -79,6 +105,7 @@ state.posts = posts;
 state.series = series;
 renderAll();
 await renderRoute({ keepScroll: true });
+openPhotoFromHash();
 
 function renderAll() {
   renderPhotos();
@@ -98,6 +125,8 @@ function visiblePhotos() {
 }
 
 function renderPhotos() {
+  grid.classList.toggle("is-large", galleryView.value() === "large");
+  grid.classList.toggle("is-dense", galleryView.value() === "dense");
   const visible = visiblePhotos();
   photoCount.textContent = countText(visible.length, state.photos.length);
   if (visible.length === 0) {
@@ -137,6 +166,7 @@ function pickTag(tag) {
 }
 
 function renderPosts() {
+  postsList.classList.toggle("is-list", postsView.value() === "list");
   const posts = taggedPosts();
   tagBar.replaceChildren(...(state.tag === "" ? [] : [activeTagChip()]));
   if (posts.length === 0) {
@@ -347,6 +377,25 @@ function renderSeriesRoute(seriesId, options) {
   if (options.keepScroll !== true) {
     seriesDetail.scrollIntoView({ block: "start" });
   }
+}
+
+/* someone opened a link to one photograph: show enough of the gallery to
+   reach it, then put it on screen */
+function openPhotoFromHash() {
+  const wanted = hashParam("photo");
+  if (wanted === "") {
+    return;
+  }
+  const visible = visiblePhotos();
+  const position = visible.findIndex((photo) => photo.id === wanted);
+  if (position < 0) {
+    return;
+  }
+  if (position >= state.photosShown) {
+    state.photosShown = Math.ceil((position + 1) / PHOTOS_PER_STEP) * PHOTOS_PER_STEP;
+    renderPhotos();
+  }
+  openLightbox(visible.map(lightboxItem), position);
 }
 
 function hashParam(name) {

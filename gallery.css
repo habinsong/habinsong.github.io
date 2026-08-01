@@ -121,3 +121,25 @@ figcaption {
   font-size: 17px;
   font-weight: 400;
 }
+
+/* ── gallery views ──────────────────────────────────────── */
+
+/* one frame to a row, as large as the column allows */
+.photo-grid.is-large .photo-card,
+.photo-grid.is-large .photo-card:nth-child(5n + 1) {
+  grid-column: 1 / -1;
+}
+
+/* four to a row, captions off — for looking across a body of work */
+.photo-grid.is-dense {
+  gap: var(--space-6) var(--space-4);
+}
+
+.photo-grid.is-dense .photo-card,
+.photo-grid.is-dense .photo-card:nth-child(5n + 1) {
+  grid-column: span 3;
+}
+
+.photo-grid.is-dense figcaption {
+  display: none;
+}
